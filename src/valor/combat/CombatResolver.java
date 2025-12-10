@@ -7,6 +7,8 @@ import utils.GameConstants;
 import utils.SpellType;
 import valor.actions.ActionResult;
 import valor.turns.TurnContext;
+import valor.board.ValorBoard;
+import world.Position;
 
 // Combat math for Legends of Valor (reuses balanced constants)
 public class CombatResolver {
@@ -25,6 +27,7 @@ public class CombatResolver {
         }
         
         int heroDamage = hero.calculateDamage();
+        heroDamage = applyHeroTileBuff(hero, ctx, heroDamage);
         int scaledDefense = (int) (target.getEffectiveDefense() * GameConstants.MONSTER_DEFENSE_SCALE);
         int actualDamage = Math.max(1, heroDamage - scaledDefense);
         
@@ -58,6 +61,7 @@ public class CombatResolver {
         }
         
         int spellDamage = hero.calculateSpellDamage(spell);
+        spellDamage = applySpellTileBuff(hero, ctx, spellDamage);
         int scaledDefense = (int) (target.getEffectiveDefense() * GameConstants.MONSTER_DEFENSE_SCALE);
         int actualDamage = Math.max(1, spellDamage - scaledDefense);
         
@@ -136,6 +140,40 @@ public class CombatResolver {
             default:
                 return "";
         }
+    }
+    
+    // Terrain buffs (light, non-invasive, tied to tile types)
+    private int applyHeroTileBuff(Hero hero, TurnContext ctx, int damage) {
+        if (ctx == null || ctx.getBoard() == null) {
+            return damage;
+        }
+        Position pos = ctx.getHeroPosition(hero);
+        if (pos == null) {
+            return damage;
+        }
+        ValorBoard board = ctx.getBoard();
+        if (board.isKoulou(pos)) {
+            return (int) (damage * 1.1); // strength buff
+        }
+        return damage;
+    }
+    
+    private int applySpellTileBuff(Hero hero, TurnContext ctx, int damage) {
+        if (ctx == null || ctx.getBoard() == null) {
+            return damage;
+        }
+        Position pos = ctx.getHeroPosition(hero);
+        if (pos == null) {
+            return damage;
+        }
+        ValorBoard board = ctx.getBoard();
+        if (board.isBush(pos)) {
+            return (int) (damage * 1.1); // dexterity flavored buff
+        }
+        if (board.isCave(pos)) {
+            return (int) (damage * 1.05); // small agility flavor
+        }
+        return damage;
     }
 }
 
