@@ -119,6 +119,19 @@ public class ValorBoard {
         }
     }
     
+    // Find a spawn spot on monster nexus row in the given lane (nearest free column)
+    public Position findMonsterSpawnSpot(int lane, Occupancy occupancy) {
+        int row = 0;
+        int[] cols = laneToColumns(lane);
+        for (int col : cols) {
+            Position pos = new Position(row, col);
+            if (!occupancy.isOccupied(pos) && isAccessible(pos)) {
+                return pos;
+            }
+        }
+        return null;
+    }
+    
     // Simple occupancy hook so board does not own entities
     public interface Occupancy {
         boolean isOccupied(Position pos);

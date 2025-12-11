@@ -39,6 +39,22 @@ public class TurnContext implements ValorBoard.Occupancy {
         return new ArrayList<>(monsters);
     }
     
+    public void addMonster(Monster monster, Position position) {
+        if (monster == null || position == null) {
+            return;
+        }
+        monsters.add(monster);
+        setMonsterPosition(monster, position);
+    }
+    
+    public void removeMonster(Monster monster) {
+        if (monster == null) {
+            return;
+        }
+        monsters.remove(monster);
+        monsterPositions.remove(monster);
+    }
+    
     public Random getRng() {
         return rng;
     }

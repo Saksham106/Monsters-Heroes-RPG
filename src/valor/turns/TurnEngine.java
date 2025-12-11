@@ -71,7 +71,13 @@ public class TurnEngine {
         
         Hero chosen = pickHeroInRange(monster, ctx);
         if (chosen == null) {
-            return new ActionResult(true, "Monster has no hero in range.");
+            // try to move forward toward hero nexus
+            Position next = nextForwardStep(monster, ctx);
+            if (next != null) {
+                ctx.moveMonster(monster, next);
+                return new ActionResult(true, monster.getName() + " moves forward to " + next);
+            }
+            return new ActionResult(true, "Monster has no hero in range and cannot move.");
         }
         return combatResolver.monsterAttack(monster, chosen, ctx);
     }
@@ -194,6 +200,19 @@ public class TurnEngine {
             if (h.isAlive()) {
                 return h;
             }
+        }
+        return null;
+    }
+    
+    private Position nextForwardStep(Monster monster, TurnContext ctx) {
+        ValorBoard board = ctx.getBoard();
+        Position current = ctx.getMonsterPosition(monster);
+        if (board == null || current == null) {
+            return null;
+        }
+        Position forward = new Position(current.getRow() + 1, current.getCol());
+        if (board.inBounds(forward) && board.isAccessible(forward) && !ctx.isOccupied(forward)) {
+            return forward;
         }
         return null;
     }
