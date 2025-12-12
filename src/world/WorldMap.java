@@ -7,7 +7,9 @@ import utils.GameConstants;
 import world.Tile;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 // World map - 8x8 board with 3 vertical lanes separated by walls.
@@ -17,6 +19,9 @@ public class WorldMap {
     private final Cell[][] grid;
     private final Random random;
     private Position partyPosition;
+    // id maps for stable short ids used in rendering
+    private final Map<Hero, Integer> heroIds = new HashMap<>();
+    private final Map<Monster, Integer> monsterIds = new HashMap<>();
 
     // lane column groups: left, middle, right
     private final int[][] lanes = new int[][] { {0,1}, {3,4}, {6,7} };
@@ -103,9 +108,73 @@ public class WorldMap {
         // set initial party position at bottom middle lane (default spawn)
         int spawnCol = lanes[1][0];
         this.partyPosition = new Position(size - 1, spawnCol);
+
+        // Ensure each lane has at least one clear path from top nexus to bottom nexus
+        for (int i = 0; i < lanes.length; i++) {
+            ensureLanePathExists(i);
+        }
     }
 
-    // --- backward compatible API methods used by existing game controller ---
+    // Ensure there is a walkable path from top to bottom within the given lane (by columns)
+    // If no path exists due to obstacles, carve a vertical path by clearing obstacles in one column.
+    private void ensureLanePathExists(int laneIdx) {
+        int[] laneCols = lanes[laneIdx];
+
+        // BFS from any top nexus cell in the lane to any bottom nexus cell in the lane
+        List<Position> starts = new ArrayList<>();
+        List<Position> goals = new ArrayList<>();
+        for (int col : laneCols) {
+            starts.add(new Position(0, col));
+            goals.add(new Position(size - 1, col));
+        }
+
+        // perform BFS limited to lane columns and forbidding INACCESSIBLE and OBSTACLE
+        boolean reachable = false;
+        java.util.LinkedList<Position> queue = new java.util.LinkedList<>();
+        java.util.Set<Position> visited = new java.util.HashSet<>();
+        for (Position s : starts) {
+            queue.add(s);
+            visited.add(s);
+        }
+
+        while (!queue.isEmpty() && !reachable) {
+            Position p = queue.removeFirst();
+            // check goals
+            for (Position g : goals) {
+                if (p.equals(g)) { reachable = true; break; }
+            }
+            if (reachable) break;
+
+            // neighbors but restrict columns to laneCols
+            for (Position n : neighbors(p)) {
+                if (visited.contains(n)) continue;
+                int nc = n.getCol();
+                boolean inLane = false;
+                for (int c : laneCols) if (c == nc) { inLane = true; break; }
+                if (!inLane) continue;
+                Cell ccell = getCellAt(n);
+                if (ccell == null) continue;
+                if (ccell.getType() == CellType.INACCESSIBLE || ccell.getType() == CellType.OBSTACLE) continue;
+                visited.add(n);
+                queue.add(n);
+            }
+        }
+
+        if (reachable) return;
+
+        // No reachable path: carve a vertical path in the first column of the lane
+        int carveCol = laneCols[0];
+        for (int r = 0; r < size; r++) {
+            Position p = new Position(r, carveCol);
+            Cell c = getCellAt(p);
+            if (c == null) continue;
+            // don't overwrite nexus or market; but ensure obstacles cleared
+            if (c.getType() == CellType.OBSTACLE) c.setType(CellType.PLAIN);
+            else if (c.getType() == CellType.INACCESSIBLE) c.setType(CellType.PLAIN);
+        }
+    }
+
+    // --- backwards compatible API methods used by existing game controller ---
     // Return a textual map like the old displayMap()
     public String displayMap() {
         return render();
@@ -195,8 +264,15 @@ public class WorldMap {
 
     // place hero/monster at a cell (assumes canEnter checked)
     public boolean placeHero(Position pos, Hero h) {
+        if (!isValidPosition(pos)) return false;
         if (!canEnter(pos, true)) return false;
-        getCellAt(pos).placeHero(h);
+        // assign hero id if missing
+        if (!heroIds.containsKey(h)) {
+            int next = heroIds.size() + 1;
+            heroIds.put(h, next);
+        }
+        String id = "H" + heroIds.get(h);
+        getCellAt(pos).placeHero(h, id);
         return true;
     }
 
@@ -204,13 +280,23 @@ public class WorldMap {
         if (!isValidPosition(pos)) return false;
         Cell c = getCellAt(pos);
         if (!c.hasHero()) return false;
+        // clear mapping for the hero instance if exists
+        Hero h = c.getHero();
         c.removeHero();
+        if (h != null) heroIds.remove(h);
         return true;
     }
 
     public boolean placeMonster(Position pos, Monster m) {
+        if (!isValidPosition(pos)) return false;
         if (!canEnter(pos, false)) return false;
-        getCellAt(pos).placeMonster(m);
+        // assign monster id if missing
+        if (!monsterIds.containsKey(m)) {
+            int next = monsterIds.size() + 1;
+            monsterIds.put(m, next);
+        }
+        String id = "M" + monsterIds.get(m);
+        getCellAt(pos).placeMonster(m, id);
         return true;
     }
 
@@ -218,21 +304,102 @@ public class WorldMap {
         if (!isValidPosition(pos)) return false;
         Cell c = getCellAt(pos);
         if (!c.hasMonster()) return false;
+        Monster m = c.getMonster();
         c.removeMonster();
+        if (m != null) monsterIds.remove(m);
         return true;
+    }
+
+    // find position of a hero on the board (null if not placed)
+    public Position getHeroPosition(Hero h) {
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                Cell cell = grid[r][c];
+                if (cell.hasHero() && cell.getHero() == h) return new Position(r, c);
+            }
+        }
+        return null;
+    }
+
+    // find position of a monster on the board (first match)
+    public Position getMonsterPosition(Monster m) {
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                Cell cell = grid[r][c];
+                if (cell.hasMonster() && cell.getMonster() == m) return new Position(r, c);
+            }
+        }
+        return null;
+    }
+
+    // move monsters one step forward (toward heroes) along their lane if possible
+    public void stepMonsters() {
+        // collect monster positions first
+        List<Position> monsterPositions = new ArrayList<>();
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                Cell cell = grid[r][c];
+                if (cell.hasMonster()) monsterPositions.add(new Position(r, c));
+            }
+        }
+
+        if (monsterPositions.isEmpty()) return;
+
+        // choose one random monster to move per step (better matches desired pacing)
+        Position chosen = monsterPositions.get(random.nextInt(monsterPositions.size()));
+        Cell src = getCellAt(chosen);
+        Monster m = src.getMonster();
+        if (m == null) return;
+
+        // attempt forward move first (down)
+        Position forward = chosen.moveDown();
+        if (isValidPosition(forward) && canEnter(forward, false) && !isBlockedByOpposingUnit(chosen, forward, false)) {
+            // move forward
+            Cell dst = getCellAt(forward);
+            src.removeMonster();
+            Integer mid = monsterIds.get(m);
+            String id = mid != null ? "M" + mid : null;
+            dst.placeMonster(m, id);
+            return;
+        }
+
+        // if forward blocked, try lateral move within same lane to bypass obstacles
+        int laneIdx = getLaneIndexForPosition(chosen);
+        if (laneIdx == -1) return; // monster not in a lane column? nothing to do
+
+        int[] laneCols = lanes[laneIdx];
+        int curCol = chosen.getCol();
+        int otherCol = laneCols.length > 1 ? (laneCols[0] == curCol ? laneCols[1] : laneCols[0]) : curCol;
+
+        // try lateral (same row, other column) if different
+        if (otherCol != curCol) {
+            Position lateral = new Position(chosen.getRow(), otherCol);
+            if (isValidPosition(lateral) && canEnter(lateral, false) && !isBlockedByOpposingUnit(chosen, lateral, false)) {
+                // move laterally to try bypassing obstacle next turn
+                Cell dst = getCellAt(lateral);
+                src.removeMonster();
+                Integer mid = monsterIds.get(m);
+                String id = mid != null ? "M" + mid : null;
+                dst.placeMonster(m, id);
+                return;
+            }
+        }
+
+        // no valid move found for this monster this step
     }
 
     // Blocking rule: cannot move past an opposing unit in the same lane
     // For any move from 'from' to 'to', if there exists an opposing unit
     // located strictly between the two positions (same lane) then movement is blocked.
     private boolean isBlockedByOpposingUnit(Position from, Position to, boolean movingIsHero) {
-        int laneFrom = getLaneIndex(from);
-        int laneTo = getLaneIndex(to);
+        int laneFrom = getLaneIndexForPosition(from);
+        int laneTo = getLaneIndexForPosition(to);
+        if (laneFrom == -1 || laneTo == -1) return false; // if not in lanes, don't block
         if (laneFrom != laneTo) return false; // different lanes
 
         int minRow = Math.min(from.getRow(), to.getRow());
         int maxRow = Math.max(from.getRow(), to.getRow());
-        // check any cell strictly between the two rows in same column
+        // check any cell strictly between the two rows in same lane columns
         for (int r = minRow + 1; r < maxRow; r++) {
             for (int col : lanes[laneFrom]) {
                 Cell c = grid[r][col];
@@ -258,54 +425,72 @@ public class WorldMap {
             Hero h = src.getHero();
             if (h == null) return false;
             src.removeHero();
-            dst.placeHero(h);
+            // preserve hero id mapping if present
+            Integer hid = heroIds.get(h);
+            String hidStr = hid != null ? "H" + hid : null;
+            dst.placeHero(h, hidStr);
         } else {
             Monster m = src.getMonster();
             if (m == null) return false;
             src.removeMonster();
-            dst.placeMonster(m);
+            Integer mid = monsterIds.get(m);
+            String midStr = mid != null ? "M" + mid : null;
+            dst.placeMonster(m, midStr);
         }
         return true;
     }
 
-    // Teleport rules (for a mover that teleports to 'dest' relative to a target hero at 'target')
-    // - only cross-lane (dest lane != target lane)
-    // - dest must be orthogonally adjacent to target
-    // - dest must not be ahead of the target (heroes: not north of target; monsters: not south of target)
-    // - dest must not be occupied by a hero
-    // - dest must not be behind a monster in that lane (i.e. there is a monster further toward the Nexus than dest)
+    // Teleport rules (refactored)
+    // - destination must be adjacent (including diagonal) to the target hero
+    // - destination column must be within the target hero's lane columns (exact lane membership)
+    // - destination must not be inaccessible/obstacle or occupied by a hero
+    // - destination must pass canEnter checks for the mover
     public boolean applyTeleportRules(Position dest, Position target, boolean isHeroMover) {
         if (!isValidPosition(dest) || !isValidPosition(target)) return false;
-        int laneDest = getLaneIndex(dest);
-        int laneTarget = getLaneIndex(target);
-        if (laneDest == laneTarget) return false; // must be cross-lane
-        // must be adjacent to target
-        if (!isInRange(dest, target)) return false;
+        if (dest.equals(target)) return false;
 
-        // not ahead of that hero
-        if (isHeroMover) {
-            if (dest.getRow() < target.getRow()) return false; // hero cannot be placed north of target
-        } else {
-            if (dest.getRow() > target.getRow()) return false; // monster cannot be placed south of target
-        }
+        // adjacency (including diagonal)
+        int dr = Math.abs(dest.getRow() - target.getRow());
+        int dc = Math.abs(dest.getCol() - target.getCol());
+        if (Math.max(dr, dc) > 1) return false;
 
-        // not onto a hero
-        if (getCellAt(dest).hasHero()) return false;
+        // lane membership: destination must be in the same lane as target (exact)
+        int laneTarget = laneForColumn(target.getCol());
+        int laneDest = laneForColumn(dest.getCol());
+        if (laneTarget == -1 || laneDest == -1) return false;
+        if (laneTarget != laneDest) return false; // must be in target's lane columns
 
-        // not behind a monster in that lane: if there's any monster whose row is < dest.row (i.e., closer to top)
-        for (int col : lanes[laneDest]) {
-            for (int r = 0; r < size; r++) {
-                Cell c = grid[r][col];
-                if (c.hasMonster()) {
-                    // if a monster exists that is north of dest (row < dest.row) then dest is behind it
-                    if (r < dest.getRow()) return false;
-                }
+        Cell destCell = getCellAt(dest);
+        if (destCell == null) return false;
+        if (destCell.getType() == CellType.OBSTACLE) return false;
+        if (destCell.getType() == CellType.INACCESSIBLE) return false;
+        if (destCell.hasHero()) return false; // cannot teleport onto another hero
+
+        if (!canEnter(dest, isHeroMover)) return false;
+
+        return true;
+    }
+
+    // Returns a list of valid teleport destinations around a target (adjacent cells restricted to target's lane columns)
+    // Example: if target at (6,0) (left lane), candidates are (5,0),(5,1),(6,1),(7,0),(7,1) (excluding occupied/invalid).
+    public List<Position> teleportCandidates(Position target, boolean isHeroMover) {
+        List<Position> out = new ArrayList<>();
+        if (!isValidPosition(target)) return out;
+
+        int laneTarget = laneForColumn(target.getCol());
+        if (laneTarget == -1) return out; // target not in a lane
+
+        // iterate rows target.row-1 .. target.row+1 and cols that are in the target's lane
+        for (int rr = target.getRow(); rr <= target.getRow() + 1; rr++) {
+            if (rr < 0 || rr >= size) continue;
+            for (int col : lanes[laneTarget]) {
+                Position cand = new Position(rr, col);
+                if (!isValidPosition(cand)) continue;
+                if (cand.equals(target)) continue; // skip the target's own cell
+                if (applyTeleportRules(cand, target, isHeroMover)) out.add(cand);
             }
         }
-
-        // destination must otherwise be enterable (not wall/obstacle)
-        if (!canEnter(dest, isHeroMover)) return false;
-        return true;
+        return out;
     }
 
     // recall: move hero at 'from' back to their Nexus spawn cell for the lane
@@ -313,7 +498,8 @@ public class WorldMap {
         if (!isValidPosition(from)) return false;
         Cell src = getCellAt(from);
         if (!src.hasHero()) return false;
-        int lane = getLaneIndex(from);
+        int lane = getLaneIndexForPosition(from);
+        if (lane == -1) lane = 1; // fallback to middle lane spawn
         int spawnCol = lanes[lane][0];
         Position spawn = new Position(size - 1, spawnCol);
         Cell dest = getCellAt(spawn);
@@ -321,17 +507,18 @@ public class WorldMap {
         // perform move
         Hero h = src.getHero();
         src.removeHero();
-        dest.placeHero(h);
+        // Use placeHero so the hero's id mapping is preserved and applied at destination
+        placeHero(spawn, h);
         return true;
     }
 
-    // attack/spell range helper: same cell or orthogonal neighbors
+    // attack/spell range helper: same cell or orthogonal neighbors (and diagonal adjacency allowed)
     public boolean isInRange(Position a, Position b) {
         if (!isValidPosition(a) || !isValidPosition(b)) return false;
         if (a.equals(b)) return true;
         int dr = Math.abs(a.getRow() - b.getRow());
         int dc = Math.abs(a.getCol() - b.getCol());
-        return (dr + dc) == 1;
+        return Math.max(dr, dc) <= 1;
     }
 
     // Remove obstacle action (turn-consuming) - converts OBSTACLE -> PLAIN
@@ -343,16 +530,91 @@ public class WorldMap {
         return true;
     }
 
-    // get lane index 0..2 by column grouping
-    private int getLaneIndex(Position pos) {
-        int col = pos.getCol();
+    // get lane index 0..2 by column grouping; returns -1 if column is not part of a lane (e.g. wall)
+    private int laneForColumn(int col) {
         for (int i = 0; i < lanes.length; i++) {
             for (int c : lanes[i]) if (c == col) return i;
         }
-        // if position is in wall column, map it to nearest lane on the left
-        if (col == wallColumns[0]) return 0;
-        if (col == wallColumns[1]) return 1;
-        return 1; // default
+        return -1;
+    }
+
+    // get lane index for a position (based on its column)
+    private int getLaneIndexForPosition(Position pos) {
+        if (!isValidPosition(pos)) return -1;
+        return laneForColumn(pos.getCol());
+    }
+
+    // helper: get hero nexus spawn position for index 0..2 (bottom row)
+    public Position getHeroNexusSpawn(int index) {
+        int idx = Math.max(0, Math.min(index, lanes.length - 1));
+        int col = lanes[idx][0];
+        return new Position(size - 1, col);
+    }
+
+    // Teleport a hero from one position to another while preserving their short id mapping.
+    // This performs minimal checks: positions valid, source contains a hero, destination enterable.
+    public boolean teleportHero(Position from, Position to) {
+        if (!isValidPosition(from) || !isValidPosition(to)) return false;
+        Cell src = getCellAt(from);
+        Cell dst = getCellAt(to);
+        if (src == null || dst == null) return false;
+        if (!src.hasHero()) return false;
+        // destination must be enterable for a hero
+        if (!canEnter(to, true)) return false;
+
+        Hero h = src.getHero();
+        if (h == null) return false;
+
+        // get existing id mapping (preserve if present)
+        Integer existing = heroIds.get(h);
+        if (existing == null) {
+            // assign a stable id if somehow absent
+            existing = heroIds.size() + 1;
+            heroIds.put(h, existing);
+        }
+
+        // remove hero from source cell (do not remove mapping)
+        src.removeHero();
+
+        // place into destination preserving id string
+        String id = "H" + existing;
+        dst.placeHero(h, id);
+        return true;
+    }
+
+    // helper: get monster nexus spawn position for index 0..2 (top row)
+    public Position getMonsterNexusSpawn(int index) {
+        int idx = Math.max(0, Math.min(index, lanes.length - 1));
+        int col = lanes[idx][0];
+        return new Position(0, col);
+    }
+
+    // remove any monsters placed on the top nexus (cleanup after battles)
+    public void clearMonstersAtTopNexus() {
+        for (int i = 0; i < lanes.length; i++) {
+            int col = lanes[i][0];
+            Position p = new Position(0, col);
+            Cell c = getCellAt(p);
+            if (c != null && c.hasMonster()) c.removeMonster();
+        }
+    }
+
+    // check if any hero has reached the top nexus (row 0)
+    public boolean anyHeroAtTopNexus() {
+        for (int c = 0; c < size; c++) {
+            Cell cell = grid[0][c];
+            if (cell.hasHero() && cell.getType() == CellType.NEXUS) return true;
+        }
+        return false;
+    }
+
+    // check if any monster has reached the bottom nexus (row size-1)
+    public boolean anyMonsterAtBottomNexus() {
+        for (int c = 0; c < size; c++) {
+            Cell cell = grid[size - 1][c];
+            if (cell.hasMonster() && cell.getType() == CellType.NEXUS) return true;
+        }
+        return false;
     }
 
     // Text rendering
@@ -385,5 +647,3 @@ public class WorldMap {
         return render();
     }
 }
-
-

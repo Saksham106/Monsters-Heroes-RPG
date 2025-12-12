@@ -8,11 +8,16 @@ public class Cell {
     private CellType type;
     private Hero hero;       // nullable
     private Monster monster; // nullable
+    // short ids used for rendering (e.g., H1, M2)
+    private String heroId;
+    private String monsterId;
 
     public Cell(CellType type) {
         this.type = type;
         this.hero = null;
         this.monster = null;
+        this.heroId = null;
+        this.monsterId = null;
     }
 
     public CellType getType() {
@@ -47,20 +52,36 @@ public class Cell {
         return monster == null && type != CellType.INACCESSIBLE;
     }
 
-    public void placeHero(Hero h) {
+    // place hero with optional id for rendering
+    public void placeHero(Hero h, String id) {
         this.hero = h;
+        this.heroId = id;
+    }
+
+    // legacy convenience
+    public void placeHero(Hero h) {
+        placeHero(h, null);
     }
 
     public void removeHero() {
         this.hero = null;
+        this.heroId = null;
     }
 
-    public void placeMonster(Monster m) {
+    // place monster with optional id for rendering
+    public void placeMonster(Monster m, String id) {
         this.monster = m;
+        this.monsterId = id;
+    }
+
+    // legacy convenience
+    public void placeMonster(Monster m) {
+        placeMonster(m, null);
     }
 
     public void removeMonster() {
         this.monster = null;
+        this.monsterId = null;
     }
 
     public boolean isWalkable() {
@@ -72,15 +93,17 @@ public class Cell {
     public String renderShort() {
         // Occupancy display
         if (hasHero() && hasMonster()) {
-            String h = shortHeroId(hero);
-            String m = shortMonsterId(monster);
+            String h = heroId != null ? heroId : shortHeroId(hero);
+            String m = monsterId != null ? monsterId : shortMonsterId(monster);
             return String.format("%s/%s", padCenter(h,3), padCenter(m,3));
         }
         if (hasHero()) {
-            return padCenter(shortHeroId(hero), 6);
+            String h = heroId != null ? heroId : shortHeroId(hero);
+            return padCenter(h, 6);
         }
         if (hasMonster()) {
-            return padCenter(shortMonsterId(monster), 6);
+            String m = monsterId != null ? monsterId : shortMonsterId(monster);
+            return padCenter(m, 6);
         }
 
         // No occupants: render by cell type
