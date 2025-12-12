@@ -290,7 +290,14 @@ public class GameController {
     
     // enter the market and let player buy/sell items
     private void handleMarket() {
-        if (!worldMap.getCurrentTile().isMarket()) {
+        // Determine the currently selected hero's position and check if they're on a market tile
+        Position heroPos = worldMap.getHeroPosition(party.get(currentHeroIndex));
+        if (heroPos == null) {
+            view.println("Selected hero is not on the board!");
+            return;
+        }
+        Cell currentCell = worldMap.getCellAt(heroPos);
+        if (currentCell == null || currentCell.getType() != world.CellType.MARKET) {
             view.println("You are not at a market!");
             return;
         }
