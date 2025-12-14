@@ -35,8 +35,8 @@ public class ConsoleView {
     public void printTitleBanner() {
         println("╔════════════════════════════════════════════════════════════╗");
         println("║                                                            ║");
-        println("║           MONSTERS AND HEROES                              ║");
-        println("║           A Text-Based RPG Adventure                       ║");
+        println("║           LEGENDS OF VALOR                                 ║");
+        println("║           A Text-Based MOBA                                ║");
         println("║                                                            ║");
         println("╚════════════════════════════════════════════════════════════╝");
         println();
@@ -56,10 +56,16 @@ public class ConsoleView {
         println("  Q/q - Quit Game");
         println();
         println("MAP SYMBOLS:");
-        println("  P   - Your Party");
+        println("  H#   - Your Hero");
+        println("  M#   - Monster");
         println("  M   - Market Tile");
+        println("  B   - Bush Tile");
+        println("  C   - Cave Tile");
+        println("  K   - Koulou Tile");
+        println("  O   - Obstacle Tile");
+        println("  N   - Nexus Tile");
         println("  X   - Inaccessible Tile");
-        println("  ' ' - Common Tile (may trigger battles)");
+        println("  ' ' - Plain Tile");
         println();
         println("OBJECTIVE:");
         println("  Explore the world, battle monsters, level up your heroes,");

@@ -4,6 +4,7 @@ import characters.*;
 import items.*;
 import world.WorldMap;
 import world.Position;
+import world.Cell;
 import market.Market;
 import battle.Battle;
 import io.ConsoleView;
@@ -12,6 +13,10 @@ import utils.GameConstants;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.Collections;
 
 // Main game controller - runs the whole game
 // Handles setup, game loop, movement, battles, markets, etc.
@@ -21,6 +26,10 @@ public class GameController {
     private List<Hero> party;
     private List<Market> markets;
     private boolean gameRunning;
+    private int currentHeroIndex = 0; // which hero is selected for movement/actions
+    // spawn & round management
+    private int roundCounter = 0; // global round counter (increments each battle round)
+    private int spawnInterval = 4; // rounds between monster spawns (default medium)
     
     // Data pools for creating markets and spawning monsters
     private List<Weapon> allWeapons;
@@ -50,9 +59,34 @@ public class GameController {
         
         // Create world
         worldMap = new WorldMap(GameConstants.WORLD_SIZE);
+
+        // Choose difficulty (controls spawn frequency)
+        view.println("\nSelect difficulty:");
+        view.println("1) Easy (spawn every 6 rounds)");
+        view.println("2) Medium (spawn every 4 rounds)");
+        view.println("3) Hard (spawn every 2 rounds)");
+        int diff = view.readInt("Difficulty: ", 1, 3);
+        switch (diff) {
+            case 1: spawnInterval = 10; break;
+            case 2: spawnInterval = 6; break;
+            case 3: spawnInterval = 4; break;
+            default: spawnInterval = 10; break;
+        }
         
         // Create markets
         createMarkets();
+
+        // Place the 3 heroes on their Nexus spawn cells (bottom row) so they render on board
+        for (int i = 0; i < party.size(); i++) {
+            Position spawn = worldMap.getHeroNexusSpawn(i);
+            worldMap.placeHero(spawn, party.get(i));
+        }
+
+        // Spawn initial monsters at top Nexus so they are visible on the board
+        List<Monster> initialMonsters = spawnMonsters();
+        if (!initialMonsters.isEmpty()) {
+            view.println("Monsters have appeared at the top Nexus.");
+        }
         
         view.println("Game initialized successfully!");
         view.println();
@@ -87,15 +121,15 @@ public class GameController {
                                    allDragons.size(), allExoskeletons.size(), allSpirits.size()));
     }
     
-    // let player pick 1-3 heroes for their party
+    // let player pick exactly 3 heroes for their party
     private void createParty() {
         view.println("\n=== HERO SELECTION ===");
-        view.println("You can choose 1-3 heroes for your party.");
-        
-        int partySize = view.readInt("How many heroes do you want? (1-3): ", 1, 3);
-        
+        view.println("Choose exactly 3 heroes for your party.");
+
+        int partySize = 3; // fixed
+
         party = new ArrayList<>();
-        
+
         // Load available heroes
         List<Warrior> warriors = DataLoader.loadWarriors("Warriors.txt");
         List<Sorcerer> sorcerers = DataLoader.loadSorcerers("Sorcerers.txt");
@@ -106,11 +140,11 @@ public class GameController {
         allHeroes.addAll(sorcerers);
         allHeroes.addAll(paladins);
         
-        if (allHeroes.isEmpty()) {
-            view.println("ERROR: No heroes could be loaded! Check data files.");
+        if (allHeroes.size() < partySize) {
+            view.println("ERROR: Not enough heroes could be loaded! Check data files.");
             System.exit(1);
         }
-        
+
         for (int i = 0; i < partySize; i++) {
             view.println(String.format("\nSelect hero %d:", i + 1));
             
@@ -174,7 +208,7 @@ public class GameController {
             processPlayerInput();
         }
         
-        view.println("\nThank you for playing Monsters and Heroes!");
+        view.println("\nThank you for playing Legends of Valor!");
         view.close();
     }
     
@@ -183,13 +217,19 @@ public class GameController {
         view.println();
         view.printSeparator();
         view.println(worldMap.displayMap());
-        view.println("Party location: " + worldMap.getPartyPosition());
+        // show selected hero and their positions
+        for (int i = 0; i < party.size(); i++) {
+            Hero h = party.get(i);
+            Position p = worldMap.getHeroPosition(h);
+            String sel = (i == currentHeroIndex) ? "<-- selected" : "";
+            view.println(String.format("%d) %s at %s %s", i + 1, h.getName(), p, sel));
+        }
         view.printSeparator();
     }
     
     // get player input and do the appropriate action
     private void processPlayerInput() {
-        view.print("Enter command (W/A/S/D/I/M/Q): ");
+    view.print("Enter command (1-3 to select hero, W/A/S/D to move selected, T=Teleport, R=Recall, I/M/Q): ");
         String input = view.readLine().trim().toUpperCase();
         
         if (input.isEmpty()) {
@@ -199,17 +239,32 @@ public class GameController {
         char command = input.charAt(0);
         
         switch (command) {
+            case '1':
+            case '2':
+            case '3':
+                int idx = command - '0' - 1;
+                if (idx >= 0 && idx < party.size()) {
+                    currentHeroIndex = idx;
+                    view.println("Selected hero: " + party.get(currentHeroIndex).getName());
+                }
+                break;
             case 'W':
-                handleMovement(worldMap.getPartyPosition().moveUp());
+                handleHeroMovement('W');
                 break;
             case 'A':
-                handleMovement(worldMap.getPartyPosition().moveLeft());
+                handleHeroMovement('A');
                 break;
             case 'S':
-                handleMovement(worldMap.getPartyPosition().moveDown());
+                handleHeroMovement('S');
                 break;
             case 'D':
-                handleMovement(worldMap.getPartyPosition().moveRight());
+                handleHeroMovement('D');
+                break;
+            case 'T':
+                handleTeleport();
+                break;
+            case 'R':
+                handleRecall();
                 break;
             case 'I':
                 displayInfo();
@@ -251,7 +306,14 @@ public class GameController {
     
     // enter the market and let player buy/sell items
     private void handleMarket() {
-        if (!worldMap.getCurrentTile().isMarket()) {
+        // Determine the currently selected hero's position and check if they're on a market tile
+        Position heroPos = worldMap.getHeroPosition(party.get(currentHeroIndex));
+        if (heroPos == null) {
+            view.println("Selected hero is not on the board!");
+            return;
+        }
+        Cell currentCell = worldMap.getCellAt(heroPos);
+        if (currentCell == null || currentCell.getType() != world.CellType.MARKET) {
             view.println("You are not at a market!");
             return;
         }
@@ -412,7 +474,7 @@ public class GameController {
         view.waitForEnter();
         
         int roundNumber = 1;
-        
+
         // Main battle loop
         while (!battle.isBattleEnded()) {
             view.println();
@@ -441,6 +503,7 @@ public class GameController {
             battle.regenerateHeroes();
             view.println("\n✨ Heroes regenerated HP and MP!");
             
+            // increment battle round number
             roundNumber++;
         }
         
@@ -507,6 +570,213 @@ public class GameController {
                     break;
             }
         }
+    }
+
+    // Move the currently selected hero in the given direction (W/A/S/D)
+    private void handleHeroMovement(char dir) {
+        // At the start of a round (hero move), respawn any dead heroes at their Nexus
+        respawnDeadHeroesAtNexus();
+        Hero hero = party.get(currentHeroIndex);
+        Position from = worldMap.getHeroPosition(hero);
+        if (from == null) {
+            view.println("Error: selected hero is not placed on the board.");
+            return;
+        }
+
+        Position to = null;
+        switch (dir) {
+            case 'W': to = from.moveUp(); break;
+            case 'A': to = from.moveLeft(); break;
+            case 'S': to = from.moveDown(); break;
+            case 'D': to = from.moveRight(); break;
+            default: return;
+        }
+
+        if (!worldMap.isValidPosition(to)) {
+            view.println("Cannot move there (out of bounds)");
+            return;
+        }
+
+        boolean moved = worldMap.move(from, to, true);
+        if (!moved) {
+            view.println("Move blocked or invalid.");
+            return;
+        }
+
+        view.println(String.format("%s moved to %s", hero.getName(), to));
+
+        // After hero moves, step monsters forward
+        worldMap.stepMonsters();
+
+        // Check for monsters in range of the hero that just moved; start battle if found
+        List<Monster> encountered = collectMonstersInRangeOf(hero);
+        if (!encountered.isEmpty()) {
+            view.println("\n*** A battle has been triggered by proximity to monsters! ***");
+            // Start battle with only the triggering hero and the encountered monsters
+            Battle battle = new Battle(Arrays.asList(hero), encountered);
+            runBattle(battle);
+        }
+
+        // increment round counter (rounds are counted on hero moves)
+        roundCounter++;
+        if (spawnInterval > 0 && roundCounter % spawnInterval == 0) {
+            view.println("\nA new wave of monsters has appeared at the enemy Nexus!");
+            spawnMonstersPeriodically();
+        }
+
+        // Check end conditions after movement and monster step
+        if (worldMap.anyHeroAtTopNexus()) {
+            view.println("\n=== HEROES WIN: one or more heroes reached the enemy Nexus! ===");
+            gameRunning = false;
+            return;
+        }
+        if (worldMap.anyMonsterAtBottomNexus()) {
+            view.println("\n=== MONSTERS WIN: monsters reached your Nexus! ===");
+            gameRunning = false;
+            return;
+        }
+    }
+
+    // Teleport the currently selected hero relative to a target hero (uses WorldMap.applyTeleportRules)
+    private void handleTeleport() {
+        Hero mover = party.get(currentHeroIndex);
+        Position from = worldMap.getHeroPosition(mover);
+        if (from == null) {
+            view.println("Error: selected hero is not placed on the board.");
+            return;
+        }
+
+        // === Choose target hero (excluding the selected hero) ===
+        view.println("Choose a target hero to teleport relative to:");
+
+        List<Hero> possibleTargets = new ArrayList<>();
+        for (Hero h : party) {
+            if (h != mover) possibleTargets.add(h);
+        }
+
+        for (int i = 0; i < possibleTargets.size(); i++) {
+            Hero h = possibleTargets.get(i);
+            view.println(String.format("%d) %s at %s",
+                i + 1, h.getName(), worldMap.getHeroPosition(h)));
+        }
+
+        int choice = view.readInt("Target hero (number): ", 1, possibleTargets.size());
+        Hero target = possibleTargets.get(choice - 1);
+        Position targetPos = worldMap.getHeroPosition(target);
+
+        if (targetPos == null) {
+            view.println("Target hero is not on the board.");
+            return;
+        }
+
+        // === Get legal teleport destinations from the WorldMap ===
+        List<Position> dests = worldMap.teleportCandidates(targetPos, true);
+
+        if (dests.isEmpty()) {
+            view.println("No valid teleport destinations available relative to that hero.");
+            return;
+        }
+
+        // === Display destinations ===
+        view.println("Valid teleport destinations:");
+        for (int i = 0; i < dests.size(); i++) {
+            Position p = dests.get(i);
+            view.println(String.format("%d) %s - %s",
+                i + 1, p, worldMap.getCellAt(p).getType()));
+        }
+
+        int destChoice = view.readInt("Choose destination: ", 1, dests.size());
+        Position dest = dests.get(destChoice - 1);
+
+        // === Perform teleport ===
+        boolean ok = worldMap.teleportHero(from, dest);
+        if (ok)
+            view.println(mover.getName() + " teleported to " + dest);
+        else
+            view.println("Teleport failed (destination became invalid).");
+    }
+
+
+    // Recall the currently selected hero back to their Nexus spawn
+    private void handleRecall() {
+        Hero h = party.get(currentHeroIndex);
+        Position pos = worldMap.getHeroPosition(h);
+        if (pos == null) {
+            view.println("Error: selected hero is not on the board.");
+            return;
+        }
+        boolean ok = worldMap.recallHero(pos);
+        if (ok) view.println(h.getName() + " has been recalled to their Nexus spawn.");
+        else view.println("Recall failed (spawn occupied or invalid).");
+    }
+
+    // collect monsters that are in range (same cell, orthogonal or diagonal neighbor) of a single hero
+    private List<Monster> collectMonstersInRangeOf(Hero hero) {
+        Set<Monster> set = new HashSet<>();
+        Position hp = worldMap.getHeroPosition(hero);
+        if (hp == null) return new ArrayList<>();
+
+        for (int r = 0; r < worldMap.getSize(); r++) {
+            for (int c = 0; c < worldMap.getSize(); c++) {
+                Position mp = new Position(r, c);
+                Cell cell = worldMap.getCellAt(mp);
+                if (cell != null && cell.hasMonster()) {
+                    if (worldMap.isInRange(hp, mp)) set.add(cell.getMonster());
+                }
+            }
+        }
+
+        List<Monster> list = new ArrayList<>(set);
+        // remove those monsters from board so battle takes them out of the map
+        for (Monster m : list) {
+            Position mp = worldMap.getMonsterPosition(m);
+            if (mp != null) worldMap.removeMonster(mp);
+        }
+        return list;
+    }
+
+    // reuse the existing startBattle flow but with a prepared Battle object
+    private void runBattle(Battle battle) {
+        view.println();
+        view.println("╔════════════════════════════════════════════════════════════╗");
+        view.println("║                  ⚔️  BATTLE BEGINS! ⚔️                      ║");
+        view.println("╚════════════════════════════════════════════════════════════╝");
+        view.println();
+        view.println("Your party encounters:");
+        for (Monster monster : battle.getMonsters()) {
+            view.println("  • " + monster);
+        }
+        view.println();
+        view.waitForEnter();
+
+        int roundNumber = 1;
+        while (!battle.isBattleEnded()) {
+            // Battle rounds do not trigger respawn; respawn occurs at the start of hero moves.
+            view.println();
+            view.println("════════════════ ROUND " + roundNumber + " ════════════════");
+            view.println();
+
+            for (Hero hero : battle.getAliveHeroes()) {
+                if (battle.isBattleEnded()) break;
+                displayBattleStatus(battle);
+                handleHeroTurn(battle, hero);
+            }
+
+            if (battle.isBattleEnded()) break;
+
+            view.println("\n--- MONSTERS' TURN ---");
+            List<Battle.BattleResult> monsterResults = battle.monstersAttackPhase();
+            for (Battle.BattleResult result : monsterResults) {
+                view.println("• " + result.getMessage());
+            }
+            view.waitForEnter();
+
+            battle.regenerateHeroes();
+            view.println("\n✨ Heroes regenerated HP and MP!");
+            roundNumber++;
+        }
+
+        handleBattleEnd(battle);
     }
     
     private void displayDetailedBattleInfo(Battle battle, Hero hero) {
@@ -721,48 +991,58 @@ public class GameController {
         }
         
         view.println();
+        // cleanup monsters from top nexus so board state reflects battle outcome
+        if (worldMap != null) {
+            worldMap.clearMonstersAtTopNexus();
+        }
+
         view.waitForEnter();
     }
     
     // create monsters to fight (same number as heroes in party)
     private List<Monster> spawnMonsters() {
         List<Monster> monsters = new ArrayList<>();
-        int monsterCount = party.size();
+        int monsterCount = 3; // always 3 monsters
         int targetLevel = getHighestHeroLevel();
-        
-        // Randomly select monster types
+
         for (int i = 0; i < monsterCount; i++) {
             int typeChoice = (int) (Math.random() * 3);
             Monster monster = null;
-            
+
             switch (typeChoice) {
-                case 0: // Dragon
-                    if (!allDragons.isEmpty()) {
-                        monster = createMonsterOfLevel(allDragons, targetLevel);
-                    }
+                case 0:
+                    if (!allDragons.isEmpty()) monster = createMonsterOfLevel(allDragons, targetLevel);
                     break;
-                case 1: // Exoskeleton
-                    if (!allExoskeletons.isEmpty()) {
-                        monster = createMonsterOfLevel(allExoskeletons, targetLevel);
-                    }
+                case 1:
+                    if (!allExoskeletons.isEmpty()) monster = createMonsterOfLevel(allExoskeletons, targetLevel);
                     break;
-                case 2: // Spirit
-                    if (!allSpirits.isEmpty()) {
-                        monster = createMonsterOfLevel(allSpirits, targetLevel);
-                    }
+                case 2:
+                    if (!allSpirits.isEmpty()) monster = createMonsterOfLevel(allSpirits, targetLevel);
                     break;
             }
-            
+
+            // Fallback: if chosen type unavailable, pick any available template
+            if (monster == null) {
+                if (!allDragons.isEmpty()) monster = createMonsterOfLevel(allDragons, targetLevel);
+                else if (!allExoskeletons.isEmpty()) monster = createMonsterOfLevel(allExoskeletons, targetLevel);
+                else if (!allSpirits.isEmpty()) monster = createMonsterOfLevel(allSpirits, targetLevel);
+            }
+
             if (monster != null) {
                 monsters.add(monster);
             }
         }
-        
-        // Fallback if no monsters were created
-        if (monsters.isEmpty() && !allDragons.isEmpty()) {
-            monsters.add(createMonsterOfLevel(allDragons, targetLevel));
+
+        // place monsters at the top nexus so they render on the board
+        if (worldMap != null) {
+            for (int i = 0; i < monsters.size(); i++) {
+                Position spawn = worldMap.getMonsterNexusSpawn(i);
+                // remove any existing monster and place new one
+                worldMap.removeMonster(spawn);
+                worldMap.placeMonster(spawn, monsters.get(i));
+            }
         }
-        
+
         return monsters;
     }
     
@@ -808,6 +1088,75 @@ public class GameController {
             }
         }
         return maxLevel;
+    }
+
+    // Respawn fainted heroes at their Nexus spawn and revive them to partial HP/MP
+    private void respawnDeadHeroesAtNexus() {
+        if (worldMap == null || party == null) return;
+        for (int i = 0; i < party.size(); i++) {
+            Hero h = party.get(i);
+            if (h == null) continue;
+            if (!h.isFainted()) continue;
+
+            // remove hero from any current cell without removing id mapping
+            Position cur = worldMap.getHeroPosition(h);
+            if (cur != null) {
+                worldMap.detachHeroFromCell(cur);
+            }
+
+            // revive (sets HP/MP to configured revival amounts)
+            h.revive();
+
+            // place at their nexus spawn
+            Position spawn = worldMap.getHeroNexusSpawn(i);
+            if (spawn != null && worldMap.canEnter(spawn, true)) {
+                worldMap.placeHero(spawn, h);
+            }
+        }
+    }
+
+    // Spawn one monster per lane at the topmost available spot (allows stacking down the lane)
+    private void spawnMonstersPeriodically() {
+        if (worldMap == null) return;
+    int targetLevel = getHighestHeroLevel();
+
+        for (int laneIdx = 0; laneIdx < 3; laneIdx++) {
+            Monster monster = null;
+            int typeChoice = (int) (Math.random() * 3);
+            switch (typeChoice) {
+                case 0:
+                    if (!allDragons.isEmpty()) monster = createMonsterOfLevel(allDragons, targetLevel);
+                    break;
+                case 1:
+                    if (!allExoskeletons.isEmpty()) monster = createMonsterOfLevel(allExoskeletons, targetLevel);
+                    break;
+                case 2:
+                    if (!allSpirits.isEmpty()) monster = createMonsterOfLevel(allSpirits, targetLevel);
+                    break;
+            }
+            if (monster == null) {
+                if (!allDragons.isEmpty()) monster = createMonsterOfLevel(allDragons, targetLevel);
+                else if (!allExoskeletons.isEmpty()) monster = createMonsterOfLevel(allExoskeletons, targetLevel);
+                else if (!allSpirits.isEmpty()) monster = createMonsterOfLevel(allSpirits, targetLevel);
+            }
+
+            if (monster == null) continue;
+
+            // Try to place monster at the topmost available cell in the lane (rows 0..size-1)
+            int[] laneCols = worldMap.getLaneColumns(laneIdx);
+            boolean placed = false;
+            for (int r = 0; r < worldMap.getSize() && !placed; r++) {
+                for (int col : laneCols) {
+                    Position p = new Position(r, col);
+                    if (worldMap.canEnter(p, false)) {
+                        worldMap.placeMonster(p, monster);
+                        placed = true;
+                        break;
+                    }
+                }
+            }
+            // if not placed (lane full), skip this lane
+        }
     }
     
     // quit the game
