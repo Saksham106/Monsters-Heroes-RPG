@@ -27,6 +27,9 @@ public class GameController {
     private List<Market> markets;
     private boolean gameRunning;
     private int currentHeroIndex = 0; // which hero is selected for movement/actions
+    // spawn & round management
+    private int roundCounter = 0; // global round counter (increments each battle round)
+    private int spawnInterval = 4; // rounds between monster spawns (default medium)
     
     // Data pools for creating markets and spawning monsters
     private List<Weapon> allWeapons;
@@ -56,6 +59,19 @@ public class GameController {
         
         // Create world
         worldMap = new WorldMap(GameConstants.WORLD_SIZE);
+
+        // Choose difficulty (controls spawn frequency)
+        view.println("\nSelect difficulty:");
+        view.println("1) Easy (spawn every 6 rounds)");
+        view.println("2) Medium (spawn every 4 rounds)");
+        view.println("3) Hard (spawn every 2 rounds)");
+        int diff = view.readInt("Difficulty: ", 1, 3);
+        switch (diff) {
+            case 1: spawnInterval = 10; break;
+            case 2: spawnInterval = 6; break;
+            case 3: spawnInterval = 4; break;
+            default: spawnInterval = 10; break;
+        }
         
         // Create markets
         createMarkets();
@@ -192,7 +208,7 @@ public class GameController {
             processPlayerInput();
         }
         
-        view.println("\nThank you for playing Monsters and Heroes!");
+        view.println("\nThank you for playing Legends of Valor!");
         view.close();
     }
     
@@ -458,7 +474,7 @@ public class GameController {
         view.waitForEnter();
         
         int roundNumber = 1;
-        
+
         // Main battle loop
         while (!battle.isBattleEnded()) {
             view.println();
@@ -487,6 +503,7 @@ public class GameController {
             battle.regenerateHeroes();
             view.println("\n✨ Heroes regenerated HP and MP!");
             
+            // increment battle round number
             roundNumber++;
         }
         
@@ -557,6 +574,8 @@ public class GameController {
 
     // Move the currently selected hero in the given direction (W/A/S/D)
     private void handleHeroMovement(char dir) {
+        // At the start of a round (hero move), respawn any dead heroes at their Nexus
+        respawnDeadHeroesAtNexus();
         Hero hero = party.get(currentHeroIndex);
         Position from = worldMap.getHeroPosition(hero);
         if (from == null) {
@@ -596,6 +615,13 @@ public class GameController {
             // Start battle with only the triggering hero and the encountered monsters
             Battle battle = new Battle(Arrays.asList(hero), encountered);
             runBattle(battle);
+        }
+
+        // increment round counter (rounds are counted on hero moves)
+        roundCounter++;
+        if (spawnInterval > 0 && roundCounter % spawnInterval == 0) {
+            view.println("\nA new wave of monsters has appeared at the enemy Nexus!");
+            spawnMonstersPeriodically();
         }
 
         // Check end conditions after movement and monster step
@@ -725,6 +751,7 @@ public class GameController {
 
         int roundNumber = 1;
         while (!battle.isBattleEnded()) {
+            // Battle rounds do not trigger respawn; respawn occurs at the start of hero moves.
             view.println();
             view.println("════════════════ ROUND " + roundNumber + " ════════════════");
             view.println();
@@ -1061,6 +1088,75 @@ public class GameController {
             }
         }
         return maxLevel;
+    }
+
+    // Respawn fainted heroes at their Nexus spawn and revive them to partial HP/MP
+    private void respawnDeadHeroesAtNexus() {
+        if (worldMap == null || party == null) return;
+        for (int i = 0; i < party.size(); i++) {
+            Hero h = party.get(i);
+            if (h == null) continue;
+            if (!h.isFainted()) continue;
+
+            // remove hero from any current cell without removing id mapping
+            Position cur = worldMap.getHeroPosition(h);
+            if (cur != null) {
+                worldMap.detachHeroFromCell(cur);
+            }
+
+            // revive (sets HP/MP to configured revival amounts)
+            h.revive();
+
+            // place at their nexus spawn
+            Position spawn = worldMap.getHeroNexusSpawn(i);
+            if (spawn != null && worldMap.canEnter(spawn, true)) {
+                worldMap.placeHero(spawn, h);
+            }
+        }
+    }
+
+    // Spawn one monster per lane at the topmost available spot (allows stacking down the lane)
+    private void spawnMonstersPeriodically() {
+        if (worldMap == null) return;
+    int targetLevel = getHighestHeroLevel();
+
+        for (int laneIdx = 0; laneIdx < 3; laneIdx++) {
+            Monster monster = null;
+            int typeChoice = (int) (Math.random() * 3);
+            switch (typeChoice) {
+                case 0:
+                    if (!allDragons.isEmpty()) monster = createMonsterOfLevel(allDragons, targetLevel);
+                    break;
+                case 1:
+                    if (!allExoskeletons.isEmpty()) monster = createMonsterOfLevel(allExoskeletons, targetLevel);
+                    break;
+                case 2:
+                    if (!allSpirits.isEmpty()) monster = createMonsterOfLevel(allSpirits, targetLevel);
+                    break;
+            }
+            if (monster == null) {
+                if (!allDragons.isEmpty()) monster = createMonsterOfLevel(allDragons, targetLevel);
+                else if (!allExoskeletons.isEmpty()) monster = createMonsterOfLevel(allExoskeletons, targetLevel);
+                else if (!allSpirits.isEmpty()) monster = createMonsterOfLevel(allSpirits, targetLevel);
+            }
+
+            if (monster == null) continue;
+
+            // Try to place monster at the topmost available cell in the lane (rows 0..size-1)
+            int[] laneCols = worldMap.getLaneColumns(laneIdx);
+            boolean placed = false;
+            for (int r = 0; r < worldMap.getSize() && !placed; r++) {
+                for (int col : laneCols) {
+                    Position p = new Position(r, col);
+                    if (worldMap.canEnter(p, false)) {
+                        worldMap.placeMonster(p, monster);
+                        placed = true;
+                        break;
+                    }
+                }
+            }
+            // if not placed (lane full), skip this lane
+        }
     }
     
     // quit the game

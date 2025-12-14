@@ -34,6 +34,12 @@ public class WorldMap {
         this.random = new Random();
         generateBoard();
     }
+    
+    // Return the columns that make up a lane (0..2)
+    public int[] getLaneColumns(int laneIdx) {
+        if (laneIdx < 0 || laneIdx >= lanes.length) return new int[0];
+        return lanes[laneIdx].clone();
+    }
 
     public int getSize() {
         return size;
@@ -284,6 +290,16 @@ public class WorldMap {
         Hero h = c.getHero();
         c.removeHero();
         if (h != null) heroIds.remove(h);
+        return true;
+    }
+
+    // Detach the hero from the given cell but keep the hero->id mapping intact.
+    // Useful when moving or respawning heroes without losing their assigned short ids.
+    public boolean detachHeroFromCell(Position pos) {
+        if (!isValidPosition(pos)) return false;
+        Cell c = getCellAt(pos);
+        if (!c.hasHero()) return false;
+        c.removeHero();
         return true;
     }
 
