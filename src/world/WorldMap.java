@@ -4,7 +4,6 @@ import characters.Hero;
 import characters.Monster;
 import utils.TileType;
 import utils.GameConstants;
-import world.Tile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,6 +21,8 @@ public class WorldMap {
     // id maps for stable short ids used in rendering
     private final Map<Hero, Integer> heroIds = new HashMap<>();
     private final Map<Monster, Integer> monsterIds = new HashMap<>();
+    // remember the original lane index a hero was assigned to (based on initial spawn)
+    private final Map<Hero, Integer> heroLane = new HashMap<>();
 
     // lane column groups: left, middle, right
     private final int[][] lanes = new int[][] { {0,1}, {3,4}, {6,7} };
@@ -279,6 +280,11 @@ public class WorldMap {
         }
         String id = "H" + heroIds.get(h);
         getCellAt(pos).placeHero(h, id);
+        // record original lane if not already recorded
+        if (!heroLane.containsKey(h)) {
+            int lane = getLaneIndexForPosition(pos);
+            heroLane.put(h, lane);
+        }
         return true;
     }
 
@@ -514,16 +520,19 @@ public class WorldMap {
         if (!isValidPosition(from)) return false;
         Cell src = getCellAt(from);
         if (!src.hasHero()) return false;
-        int lane = getLaneIndexForPosition(from);
+        Hero h = src.getHero();
+        // prefer the hero's original lane if recorded; otherwise fall back to current position
+        Integer laneObj = (h != null) ? heroLane.get(h) : null;
+        int lane = (laneObj != null) ? laneObj : getLaneIndexForPosition(from);
         if (lane == -1) lane = 1; // fallback to middle lane spawn
         int spawnCol = lanes[lane][0];
         Position spawn = new Position(size - 1, spawnCol);
         Cell dest = getCellAt(spawn);
         if (dest.hasHero()) return false; // spawn occupied
         // perform move
-        Hero h = src.getHero();
+        if (h == null) return false;
+        // detach without removing id mapping
         src.removeHero();
-        // Use placeHero so the hero's id mapping is preserved and applied at destination
         placeHero(spawn, h);
         return true;
     }
