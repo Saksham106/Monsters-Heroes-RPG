@@ -1,11 +1,6 @@
 package io;
 
-import world.WorldMap;
-import world.Tile;
-import world.Position;
 import characters.Hero;
-import characters.Monster;
-import java.util.List;
 
 public class ValorView extends ConsoleView {
     
@@ -23,8 +18,7 @@ public class ValorView extends ConsoleView {
         println();
     }
 
-    // Placeholder for board rendering - will need the actual ValorWorld class
-    // For now, we can just print a simple message or try to adapt
+    // Render the Valor board using a simple char grid
     public void displayBoard(char[][] boardRepresentation) {
         println("   0 1 2 3 4 5 6 7");
         println("  -----------------");
@@ -41,5 +35,9 @@ public class ValorView extends ConsoleView {
     public void printHeroInfo(Hero hero) {
         println(hero.toString() + " HP:" + hero.getHp() + "/" + hero.getMaxHp() + 
                 " MP:" + hero.getMp() + "/" + hero.getMaxMp());
+    }
+    
+    public void printActionResult(String message) {
+        println(message);
     }
 }
