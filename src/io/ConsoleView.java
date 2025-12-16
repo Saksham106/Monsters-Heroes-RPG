@@ -62,8 +62,7 @@ public class ConsoleView {
         println("  ' ' - Common Tile (may trigger battles)");
         println();
         println("OBJECTIVE:");
-        println("  Explore the world, battle monsters, level up your heroes,");
-        println("  and visit markets to buy better equipment!");
+        println("  Battle monsters, level up your heroes, and reach the enemy Nexus before they reach yours!");
         println();
     }
     
