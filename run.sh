@@ -9,7 +9,7 @@ if [ ! -d "bin" ]; then
     echo ""
 fi
 
-echo "Starting Monsters and Heroes RPG..."
+echo "Starting MH and LV Games..."
 echo "===================================="
 echo ""
 
