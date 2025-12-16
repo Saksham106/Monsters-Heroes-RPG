@@ -4,7 +4,6 @@ import characters.Hero;
 import characters.Monster;
 import utils.TileType;
 import utils.GameConstants;
-import world.Tile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -456,25 +455,22 @@ public class WorldMap {
         return true;
     }
 
-    // Teleport rules (refactored)
-    // - destination must be adjacent (including diagonal) to the target hero
-    // - destination column must be within the target hero's lane columns (exact lane membership)
-    // - destination must not be inaccessible/obstacle or occupied by a hero
-    // - destination must pass canEnter checks for the mover
+    // Teleport rules (Valor): must move to a different lane, adjacent to target (no diagonals),
+    // not in front of the target (cannot be closer to enemy nexus), and obey occupancy/terrain rules.
     public boolean applyTeleportRules(Position dest, Position target, boolean isHeroMover) {
         if (!isValidPosition(dest) || !isValidPosition(target)) return false;
         if (dest.equals(target)) return false;
 
-        // adjacency (including diagonal)
+        // orthogonal adjacency only
         int dr = Math.abs(dest.getRow() - target.getRow());
         int dc = Math.abs(dest.getCol() - target.getCol());
-        if (Math.max(dr, dc) > 1) return false;
+        if (dr + dc != 1) return false;
 
-        // lane membership: destination must be in the same lane as target (exact)
+        // lane membership: must be a different lane from target
         int laneTarget = laneForColumn(target.getCol());
         int laneDest = laneForColumn(dest.getCol());
         if (laneTarget == -1 || laneDest == -1) return false;
-        if (laneTarget != laneDest) return false; // must be in target's lane columns
+        if (laneTarget == laneDest) return false;
 
         Cell destCell = getCellAt(dest);
         if (destCell == null) return false;
@@ -484,27 +480,30 @@ public class WorldMap {
 
         if (!canEnter(dest, isHeroMover)) return false;
 
+        // cannot teleport in front of the target hero (toward monster nexus -> lower row index)
+        // target row smaller means closer to monster nexus
+        if (dest.getRow() < target.getRow()) return false;
+
+        // cannot jump behind a monster in the destination lane (respect blocking)
+        if (isBlockedByOpposingUnit(target, dest, true)) return false;
+
         return true;
     }
 
-    // Returns a list of valid teleport destinations around a target (adjacent cells restricted to target's lane columns)
-    // Example: if target at (6,0) (left lane), candidates are (5,0),(5,1),(6,1),(7,0),(7,1) (excluding occupied/invalid).
+    // Returns valid teleport destinations around a target (orthogonal, different lane)
     public List<Position> teleportCandidates(Position target, boolean isHeroMover) {
         List<Position> out = new ArrayList<>();
         if (!isValidPosition(target)) return out;
 
-        int laneTarget = laneForColumn(target.getCol());
-        if (laneTarget == -1) return out; // target not in a lane
-
-        // iterate rows target.row-1 .. target.row+1 and cols that are in the target's lane
-        for (int rr = target.getRow(); rr <= target.getRow() + 1; rr++) {
-            if (rr < 0 || rr >= size) continue;
-            for (int col : lanes[laneTarget]) {
-                Position cand = new Position(rr, col);
-                if (!isValidPosition(cand)) continue;
-                if (cand.equals(target)) continue; // skip the target's own cell
-                if (applyTeleportRules(cand, target, isHeroMover)) out.add(cand);
-            }
+        // orthogonal positions only
+        Position up = new Position(target.getRow() - 1, target.getCol());
+        Position down = new Position(target.getRow() + 1, target.getCol());
+        Position left = new Position(target.getRow(), target.getCol() - 1);
+        Position right = new Position(target.getRow(), target.getCol() + 1);
+        Position[] cands = new Position[] { up, down, left, right };
+        for (Position cand : cands) {
+            if (!isValidPosition(cand)) continue;
+            if (applyTeleportRules(cand, target, isHeroMover)) out.add(cand);
         }
         return out;
     }
@@ -528,13 +527,13 @@ public class WorldMap {
         return true;
     }
 
-    // attack/spell range helper: same cell or orthogonal neighbors (and diagonal adjacency allowed)
+    // attack/spell range helper: same cell or orthogonal neighbor only (no diagonals)
     public boolean isInRange(Position a, Position b) {
         if (!isValidPosition(a) || !isValidPosition(b)) return false;
         if (a.equals(b)) return true;
         int dr = Math.abs(a.getRow() - b.getRow());
         int dc = Math.abs(a.getCol() - b.getCol());
-        return Math.max(dr, dc) <= 1;
+        return dr + dc == 1;
     }
 
     // Remove obstacle action (turn-consuming) - converts OBSTACLE -> PLAIN
