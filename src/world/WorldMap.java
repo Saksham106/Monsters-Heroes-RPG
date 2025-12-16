@@ -203,7 +203,7 @@ public class WorldMap {
     // ============ Position & Validation Methods ============
     
     public boolean isValidPosition(Position pos) {
-        return movementRules.isValidPosition(pos, size);
+        return pos != null && pos.getRow() >= 0 && pos.getRow() < size && pos.getCol() >= 0 && pos.getCol() < size;
     }
     
     public Cell getCellAt(Position pos) {
