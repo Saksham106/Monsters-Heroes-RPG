@@ -30,9 +30,45 @@ public class ConsoleView {
     public void printSeparator() {
         System.out.println("================================");
     }
-    
+
     // print title banner
     public void printTitleBanner() {
+        println("╔════════════════════════════════════════════════════════════╗");
+        println("║                                                            ║");
+        println("║           MONSTERS AND HEROES                              ║");
+        println("║           A Text-Based RPG Adventure                       ║");
+        println("║                                                            ║");
+        println("╚════════════════════════════════════════════════════════════╝");
+        println();
+    }
+    
+    // print game instructions
+    public void printInstructions() {
+        println("=== GAME INSTRUCTIONS ===");
+        println();
+        println("CONTROLS:");
+        println("  W/w - Move Up");
+        println("  A/a - Move Left");
+        println("  S/s - Move Down");
+        println("  D/d - Move Right");
+        println("  I/i - Show Information");
+        println("  M/m - Enter Market (when on Market tile)");
+        println("  Q/q - Quit Game");
+        println();
+        println("MAP SYMBOLS:");
+        println("  P   - Your Party");
+        println("  M   - Market Tile");
+        println("  X   - Inaccessible Tile");
+        println("  ' ' - Common Tile (may trigger battles)");
+        println();
+        println("OBJECTIVE:");
+        println("  Explore the world, battle monsters, level up your heroes,");
+        println("  and visit markets to buy better equipment!");
+        println();
+    }
+    
+    // print title banner
+    public void printValorTitleBanner() {
         println("╔════════════════════════════════════════════════════════════╗");
         println("║                                                            ║");
         println("║           LEGENDS OF VALOR                                 ║");
@@ -43,7 +79,7 @@ public class ConsoleView {
     }
     
     // print game instructions
-    public void printInstructions() {
+    public void printValorInstructions() {
         println("=== GAME INSTRUCTIONS ===");
         println();
         println("CONTROLS:");

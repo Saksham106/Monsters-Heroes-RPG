@@ -4,66 +4,40 @@ import characters.*;
 import items.*;
 import world.WorldMap;
 import world.Position;
-import world.Cell;
 import market.Market;
 import battle.Battle;
 import io.ConsoleView;
 import io.DataLoader;
 import utils.GameConstants;
-import handlers.MarketHandler;
-import handlers.BattleHandler;
-import handlers.BattleManager;
-import handlers.MovementHandler;
-import managers.MonsterManager;
-import managers.HeroManager;
-import managers.PartyManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Arrays;
 
-/**
- * Main game controller - runs the whole game
- * Handles setup, game loop, and coordinates various managers/handlers
- */
+// Main game controller - runs the whole game
+// Handles setup, game loop, movement, battles, markets, etc.
 public class GameController {
     private final ConsoleView view;
     private WorldMap worldMap;
     private List<Hero> party;
     private List<Market> markets;
     private boolean gameRunning;
-    private int currentHeroIndex = 0; // which hero is selected for movement/actions
     
-    // Spawn & round management
-    private int roundCounter = 0;
-    private int spawnInterval = 4; // rounds between monster spawns
-    
-    // Data pools for creating markets
+    // Data pools for creating markets and spawning monsters
     private List<Weapon> allWeapons;
     private List<Armor> allArmor;
     private List<Potion> allPotions;
     private List<Spell> allSpells;
-    
-    // Managers and Handlers
-    private MonsterManager monsterManager;
-    private HeroManager heroManager;
-    private PartyManager partyManager;
-    private MarketHandler marketHandler;
-    private BattleManager battleManager;
-    private MovementHandler movementHandler;
+    private List<Dragon> allDragons;
+    private List<Exoskeleton> allExoskeletons;
+    private List<Spirit> allSpirits;
     
     public GameController() {
         this.view = new ConsoleView();
         this.gameRunning = false;
         this.markets = new ArrayList<>();
-        this.marketHandler = new MarketHandler(this.view);
-        this.battleManager = new BattleManager(this.view);
-        this.partyManager = new PartyManager(this.view);
     }
     
-    /**
-     * Set up the game - load data, create party, create world
-     */
+    // set up the game - load data, create party, create world
     public void initialize() {
         view.printTitleBanner();
         view.printInstructions();
@@ -71,54 +45,24 @@ public class GameController {
         // Load all game data
         loadGameData();
         
-        // Create party using PartyManager
-        party = partyManager.createParty();
+        // Create party
+        createParty();
         
         // Create world
         worldMap = new WorldMap(GameConstants.WORLD_SIZE);
         
-        // Initialize managers/handlers that need worldMap
-        heroManager = new HeroManager(worldMap, party);
-        movementHandler = new MovementHandler(worldMap, view);
-
-        // Choose difficulty (controls spawn frequency)
-        view.println("\nSelect difficulty:");
-        view.println("1) Easy (spawn every 6 rounds)");
-        view.println("2) Medium (spawn every 4 rounds)");
-        view.println("3) Hard (spawn every 2 rounds)");
-        int diff = view.readInt("Difficulty: ", 1, 3);
-        switch (diff) {
-            case 1: spawnInterval = 6; break;
-            case 2: spawnInterval = 4; break;
-            case 3: spawnInterval = 2; break;
-            default: spawnInterval = 4; break;
-        }
-        
         // Create markets
         createMarkets();
-
-        // Place the 3 heroes on their Nexus spawn cells
-        for (int i = 0; i < party.size(); i++) {
-            Position spawn = worldMap.getHeroNexusSpawn(i);
-            worldMap.placeHero(spawn, party.get(i));
-        }
-
-        // Spawn initial monsters at top Nexus
-        List<Monster> initialMonsters = monsterManager.spawnInitialMonsters(heroManager.getHighestHeroLevel());
-        if (!initialMonsters.isEmpty()) {
-            view.println("Monsters have appeared at the top Nexus.");
-        }
         
         view.println("Game initialized successfully!");
         view.println();
     }
     
-    /**
-     * Load all data from the txt files
-     */
+    // load all data from the txt files
     private void loadGameData() {
         view.println("Loading game data...");
         
+        // Load from files in the project root directory
         String dataPath = ""; // Files are in the current directory
         
         allWeapons = DataLoader.loadWeapons(dataPath + "Weaponry.txt");
@@ -133,12 +77,9 @@ public class GameController {
         allSpells.addAll(iceSpells);
         allSpells.addAll(lightningSpells);
         
-        List<Dragon> allDragons = DataLoader.loadDragons(dataPath + "Dragons.txt");
-        List<Exoskeleton> allExoskeletons = DataLoader.loadExoskeletons(dataPath + "Exoskeletons.txt");
-        List<Spirit> allSpirits = DataLoader.loadSpirits(dataPath + "Spirits.txt");
-        
-        // Initialize MonsterManager (needs to be done after loading data but before worldMap creation)
-        monsterManager = new MonsterManager(allDragons, allExoskeletons, allSpirits, null);
+        allDragons = DataLoader.loadDragons(dataPath + "Dragons.txt");
+        allExoskeletons = DataLoader.loadExoskeletons(dataPath + "Exoskeletons.txt");
+        allSpirits = DataLoader.loadSpirits(dataPath + "Spirits.txt");
         
         view.println(String.format("Data loaded: %d weapons, %d armor, %d potions, %d spells",
                                    allWeapons.size(), allArmor.size(), allPotions.size(), allSpells.size()));
@@ -146,10 +87,61 @@ public class GameController {
                                    allDragons.size(), allExoskeletons.size(), allSpirits.size()));
     }
     
-    /**
-     * Create markets with random items
-     */
+    // let player pick 1-3 heroes for their party
+    private void createParty() {
+        view.println("\n=== HERO SELECTION ===");
+        view.println("You can choose 1-3 heroes for your party.");
+        
+        int partySize = view.readInt("How many heroes do you want? (1-3): ", 1, 3);
+        
+        party = new ArrayList<>();
+        
+        // Load available heroes
+        List<Warrior> warriors = DataLoader.loadWarriors("Warriors.txt");
+        List<Sorcerer> sorcerers = DataLoader.loadSorcerers("Sorcerers.txt");
+        List<Paladin> paladins = DataLoader.loadPaladins("Paladins.txt");
+        
+        List<Hero> allHeroes = new ArrayList<>();
+        allHeroes.addAll(warriors);
+        allHeroes.addAll(sorcerers);
+        allHeroes.addAll(paladins);
+        
+        if (allHeroes.isEmpty()) {
+            view.println("ERROR: No heroes could be loaded! Check data files.");
+            System.exit(1);
+        }
+        
+        for (int i = 0; i < partySize; i++) {
+            view.println(String.format("\nSelect hero %d:", i + 1));
+            
+            // Display available heroes with class and stats
+            for (int j = 0; j < allHeroes.size(); j++) {
+                Hero h = allHeroes.get(j);
+                view.println(String.format("%d. %s - STR:%d DEX:%d AGI:%d MP:%d Gold:%d",
+                                         j + 1, h.toString(), h.getStrength(), 
+                                         h.getDexterity(), h.getAgility(), 
+                                         h.getMp(), h.getGold()));
+            }
+            
+            int choice = view.readInt("Your choice: ", 1, allHeroes.size());
+            Hero selectedHero = allHeroes.get(choice - 1);
+            party.add(selectedHero);
+            allHeroes.remove(choice - 1); // Remove so they can't be picked again
+            
+            view.println(String.format("\n✓ Added %s to your party!", selectedHero.getName()));
+        }
+        
+        view.println("\n=== Your Party ===");
+        for (Hero hero : party) {
+            view.println(hero.toString());
+        }
+        view.println("\nYour party is ready to adventure!");
+    }
+    
+    // create markets with random items for each market tile
     private void createMarkets() {
+        // For simplicity, create one shared market pool for now
+        // In a more complex implementation, each market tile could have its own inventory
         markets.add(createMarketWithRandomItems());
     }
     
@@ -173,18 +165,8 @@ public class GameController {
         return new Market(marketItems);
     }
     
-    /**
-     * Main game loop - runs until player quits
-     */
+    // main game loop - runs until player quits
     public void run() {
-        // Re-initialize MonsterManager with worldMap reference now that it's created
-        monsterManager = new MonsterManager(
-            DataLoader.loadDragons("Dragons.txt"),
-            DataLoader.loadExoskeletons("Exoskeletons.txt"),
-            DataLoader.loadSpirits("Spirits.txt"),
-            worldMap
-        );
-        
         gameRunning = true;
         
         while (gameRunning) {
@@ -192,32 +174,22 @@ public class GameController {
             processPlayerInput();
         }
         
-        view.println("\nThank you for playing Legends of Valor!");
+        view.println("\nThank you for playing Monsters and Heroes!");
         view.close();
     }
     
-    /**
-     * Show the map and party info
-     */
+    // show the map and party info
     private void displayGameState() {
         view.println();
         view.printSeparator();
         view.println(worldMap.displayMap());
-        // show selected hero and their positions
-        for (int i = 0; i < party.size(); i++) {
-            Hero h = party.get(i);
-            Position p = worldMap.getHeroPosition(h);
-            String sel = (i == currentHeroIndex) ? "<-- selected" : "";
-            view.println(String.format("%d) %s at %s %s", i + 1, h.getName(), p, sel));
-        }
+        view.println("Party location: " + worldMap.getPartyPosition());
         view.printSeparator();
     }
     
-    /**
-     * Get player input and do the appropriate action
-     */
+    // get player input and do the appropriate action
     private void processPlayerInput() {
-        view.print("Enter command (1-3 to select hero, W/A/S/D to move selected, T=Teleport, R=Recall, I/M/Q): ");
+        view.print("Enter command (W/A/S/D/I/M/Q): ");
         String input = view.readLine().trim().toUpperCase();
         
         if (input.isEmpty()) {
@@ -227,26 +199,17 @@ public class GameController {
         char command = input.charAt(0);
         
         switch (command) {
-            case '1':
-            case '2':
-            case '3':
-                int idx = command - '0' - 1;
-                if (idx >= 0 && idx < party.size()) {
-                    currentHeroIndex = idx;
-                    view.println("Selected hero: " + party.get(currentHeroIndex).getName());
-                }
-                break;
             case 'W':
+                handleMovement(worldMap.getPartyPosition().moveUp());
+                break;
             case 'A':
+                handleMovement(worldMap.getPartyPosition().moveLeft());
+                break;
             case 'S':
+                handleMovement(worldMap.getPartyPosition().moveDown());
+                break;
             case 'D':
-                handleHeroMovement(command);
-                break;
-            case 'T':
-                handleTeleport();
-                break;
-            case 'R':
-                handleRecall();
+                handleMovement(worldMap.getPartyPosition().moveRight());
                 break;
             case 'I':
                 displayInfo();
@@ -262,63 +225,23 @@ public class GameController {
         }
     }
     
-    /**
-     * Move the currently selected hero
-     */
-    private void handleHeroMovement(char dir) {
-        // Respawn any dead heroes at their Nexus
-        heroManager.respawnDeadHeroesAtNexus();
-        
-        Hero hero = party.get(currentHeroIndex);
-        
-        // Use MovementHandler to move the hero
-        boolean moved = movementHandler.moveHero(hero, dir);
-        if (!moved) return;
-
-        // After hero moves, step monsters forward
-        worldMap.stepMonsters();
-
-        // Check for monsters in range; start battle if found
-        List<Monster> encountered = movementHandler.collectMonstersInRangeOf(hero);
-        if (!encountered.isEmpty()) {
-            view.println("\n*** A battle has been triggered by proximity to monsters! ***");
-            Battle battle = new Battle(Arrays.asList(hero), encountered);
-            runBattle(battle);
+    // move party to new position and check for battles
+    private void handleMovement(Position newPosition) {
+        if (!worldMap.moveParty(newPosition)) {
+            view.println("Cannot move there!");
+            return;
         }
-
-        // Increment round counter
-        roundCounter++;
-        if (spawnInterval > 0 && roundCounter % spawnInterval == 0) {
-            view.println("\nA new wave of monsters has appeared at the enemy Nexus!");
-            monsterManager.spawnMonstersPeriodically(heroManager.getHighestHeroLevel());
+        
+        view.println("Party moved to " + newPosition);
+        
+        // Check for battle trigger
+        if (worldMap.shouldTriggerBattle()) {
+            view.println("\n*** A wild monster appears! ***");
+            startBattle();
         }
-
-        // End-of-turn regen for all living heroes
-        heroManager.regenerateHeroesOverworld();
-
-        // Check end conditions
-        checkWinConditions();
     }
     
-    /**
-     * Teleport the currently selected hero
-     */
-    private void handleTeleport() {
-        Hero mover = party.get(currentHeroIndex);
-        movementHandler.handleTeleport(mover, party);
-    }
-    
-    /**
-     * Recall the currently selected hero back to their Nexus spawn
-     */
-    private void handleRecall() {
-        Hero h = party.get(currentHeroIndex);
-        movementHandler.recallHero(h);
-    }
-    
-    /**
-     * Show detailed info about all heroes in the party
-     */
+    // show detailed info about all heroes in the party
     private void displayInfo() {
         view.println("\n=== PARTY INFORMATION ===");
         for (Hero hero : party) {
@@ -326,18 +249,9 @@ public class GameController {
         }
     }
     
-    /**
-     * Enter the market and let player buy/sell items
-     */
+    // enter the market and let player buy/sell items
     private void handleMarket() {
-        // Check if selected hero is on a market tile
-        Position heroPos = worldMap.getHeroPosition(party.get(currentHeroIndex));
-        if (heroPos == null) {
-            view.println("Selected hero is not on the board!");
-            return;
-        }
-        Cell currentCell = worldMap.getCellAt(heroPos);
-        if (currentCell == null || currentCell.getType() != world.CellType.MARKET) {
+        if (!worldMap.getCurrentTile().isMarket()) {
             view.println("You are not at a market!");
             return;
         }
@@ -347,11 +261,11 @@ public class GameController {
         view.println("╚════════════════════════════════════════╝");
         
         Market market = markets.get(0);
-        int marketHeroIndex = 0;
+        int currentHeroIndex = 0;
         boolean inMarket = true;
         
         while (inMarket) {
-            Hero currentHero = party.get(marketHeroIndex);
+            Hero currentHero = party.get(currentHeroIndex);
             view.println();
             view.printSeparator();
             view.println(String.format("Current Hero: %s (Gold: %d)", 
@@ -373,21 +287,21 @@ public class GameController {
             
             switch (choice) {
                 case 1:
-                    marketHandler.displayMarketItems(market);
+                    displayMarketItems(market);
                     break;
                 case 2:
-                    marketHandler.handleBuyItem(market, currentHero);
+                    handleBuyItem(market, currentHero);
                     break;
                 case 3:
-                    marketHandler.handleSellItem(market, currentHero);
+                    handleSellItem(market, currentHero);
                     break;
                 case 4:
-                    marketHandler.displayHeroInventory(currentHero);
+                    displayHeroInventory(currentHero);
                     break;
                 case 5:
                     if (party.size() > 1) {
-                        marketHeroIndex = (marketHeroIndex + 1) % party.size();
-                        view.println("\nSwitched to " + party.get(marketHeroIndex).getName());
+                        currentHeroIndex = (currentHeroIndex + 1) % party.size();
+                        view.println("\nSwitched to " + party.get(currentHeroIndex).getName());
                     } else {
                         inMarket = false;
                         view.println("\nLeaving the market...");
@@ -401,22 +315,387 @@ public class GameController {
         }
     }
     
-    /**
-     * Run a battle using the BattleManager
-     */
-    private void runBattle(Battle battle) {
-        boolean heroesWon = battleManager.runBattle(battle);
-        handleBattleEnd(battle, heroesWon);
+    private void displayMarketItems(Market market) {
+        view.println("\n=== MARKET INVENTORY ===");
+        List<Item> items = market.getItemsForSale();
+        if (items.isEmpty()) {
+            view.println("The market is out of stock!");
+            return;
+        }
+        
+        for (int i = 0; i < items.size(); i++) {
+            view.println(String.format("%d. %s", i + 1, items.get(i)));
+        }
     }
     
-    /**
-     * Handle battle end - rewards or game over
-     */
-    private void handleBattleEnd(Battle battle, boolean heroesWon) {
+    private void handleBuyItem(Market market, Hero hero) {
+        List<Item> items = market.getItemsForSale();
+        if (items.isEmpty()) {
+            view.println("\nThe market has no items for sale!");
+            return;
+        }
+        
+        displayMarketItems(market);
+        view.println(String.format("\nYour gold: %d", hero.getGold()));
+        view.println("0. Cancel");
+        
+        int choice = view.readInt("\nWhich item to buy? ", 0, items.size());
+        if (choice == 0) {
+            return;
+        }
+        
+        Item item = items.get(choice - 1);
+        Market.TransactionResult result = market.buyItem(hero, item);
+        view.println("\n" + result.getMessage());
+        
+        if (result.isSuccess()) {
+            view.println(String.format("Remaining gold: %d", hero.getGold()));
+        }
+    }
+    
+    private void handleSellItem(Market market, Hero hero) {
+        List<Item> items = hero.getInventory().getAllItems();
+        if (items.isEmpty()) {
+            view.println("\nYou have no items to sell!");
+            return;
+        }
+        
+        view.println("\n=== YOUR INVENTORY ===");
+        for (int i = 0; i < items.size(); i++) {
+            Item item = items.get(i);
+            int sellPrice = item.getPrice() / 2;
+            view.println(String.format("%d. %s (Sell for: %d gold)", i + 1, item, sellPrice));
+        }
+        view.println("0. Cancel");
+        
+        int choice = view.readInt("\nWhich item to sell? ", 0, items.size());
+        if (choice == 0) {
+            return;
+        }
+        
+        Item item = items.get(choice - 1);
+        Market.TransactionResult result = market.sellItem(hero, item);
+        view.println("\n" + result.getMessage());
+        
+        if (result.isSuccess()) {
+            view.println(String.format("New gold total: %d", hero.getGold()));
+        }
+    }
+    
+    private void displayHeroInventory(Hero hero) {
+        view.println("\n=== INVENTORY: " + hero.getName() + " ===");
+        view.println(hero.getInventory().toString());
+        view.println("\nEquipped:");
+        view.println("  Weapon: " + (hero.getEquippedWeapon() != null ? 
+                                     hero.getEquippedWeapon().getName() : "None"));
+        view.println("  Armor: " + (hero.getEquippedArmor() != null ? 
+                                    hero.getEquippedArmor().getName() : "None"));
+    }
+    
+    // start a battle with randomly spawned monsters
+    private void startBattle() {
+        // Spawn monsters based on party
+        List<Monster> monsters = spawnMonsters();
+        
+        Battle battle = new Battle(party, monsters);
+        
+        view.println();
+        view.println("╔════════════════════════════════════════════════════════════╗");
+        view.println("║                  ⚔️  BATTLE BEGINS! ⚔️                      ║");
+        view.println("╚════════════════════════════════════════════════════════════╝");
+        view.println();
+        view.println("Your party encounters:");
+        for (Monster monster : monsters) {
+            view.println("  • " + monster);
+        }
+        view.println();
+        view.waitForEnter();
+        
+        int roundNumber = 1;
+        
+        // Main battle loop
+        while (!battle.isBattleEnded()) {
+            view.println();
+            view.println("════════════════ ROUND " + roundNumber + " ════════════════");
+            view.println();
+            
+            // Heroes' turn
+            for (Hero hero : battle.getAliveHeroes()) {
+                if (battle.isBattleEnded()) break;
+                
+                displayBattleStatus(battle);
+                handleHeroTurn(battle, hero);
+            }
+            
+            if (battle.isBattleEnded()) break;
+            
+            // Monsters' turn
+            view.println("\n--- MONSTERS' TURN ---");
+            List<Battle.BattleResult> monsterResults = battle.monstersAttackPhase();
+            for (Battle.BattleResult result : monsterResults) {
+                view.println("• " + result.getMessage());
+            }
+            view.waitForEnter();
+            
+            // End of round regeneration
+            battle.regenerateHeroes();
+            view.println("\n✨ Heroes regenerated HP and MP!");
+            
+            roundNumber++;
+        }
+        
+        // Handle battle end
+        handleBattleEnd(battle);
+    }
+    
+    private void displayBattleStatus(Battle battle) {
+        view.println("\n=== HEROES ===");
+        for (Hero hero : battle.getHeroes()) {
+            if (hero.isAlive()) {
+                view.println(String.format("  ✓ %s - HP: %d/%d, MP: %d/%d", 
+                                         hero.getName(), hero.getHp(), hero.getMaxHp(),
+                                         hero.getMp(), hero.getMaxMp()));
+            } else {
+                view.println(String.format("  ✗ %s - FAINTED", hero.getName()));
+            }
+        }
+        
+        view.println("\n=== MONSTERS ===");
+        int monsterNum = 1;
+        for (Monster monster : battle.getMonsters()) {
+            if (monster.isAlive()) {
+                view.println(String.format("  %d. %s", monsterNum, monster));
+                monsterNum++;
+            }
+        }
+        view.println();
+    }
+    
+    private void handleHeroTurn(Battle battle, Hero hero) {
+        view.printSeparator();
+        view.println(String.format(">>> %s's Turn <<<", hero.getName()));
+        view.println(String.format("HP: %d/%d | MP: %d/%d", 
+                                  hero.getHp(), hero.getMaxHp(), hero.getMp(), hero.getMaxMp()));
+        view.println();
+        
+        boolean turnComplete = false;
+        
+        while (!turnComplete && !battle.isBattleEnded()) {
+            view.println("1. Attack");
+            view.println("2. Cast Spell");
+            view.println("3. Use Potion");
+            view.println("4. Equip Item");
+            view.println("5. View Info");
+            
+            int choice = view.readInt("\nYour action: ", 1, 5);
+            
+            switch (choice) {
+                case 1:
+                    turnComplete = handleAttack(battle, hero);
+                    break;
+                case 2:
+                    turnComplete = handleCastSpell(battle, hero);
+                    break;
+                case 3:
+                    turnComplete = handleUsePotion(battle, hero);
+                    break;
+                case 4:
+                    handleEquipItem(hero);
+                    break;
+                case 5:
+                    displayDetailedBattleInfo(battle, hero);
+                    break;
+            }
+        }
+    }
+    
+    private void displayDetailedBattleInfo(Battle battle, Hero hero) {
+        view.println("\n=== DETAILED BATTLE INFORMATION ===");
+        view.println("\n--- YOUR HERO ---");
+        view.println(hero.getDetailedStats());
+        
+        view.println("\n--- ALL HEROES ---");
+        for (Hero h : battle.getHeroes()) {
+            String status = h.isAlive() ? "ALIVE" : "FAINTED";
+            view.println(String.format("%s [%s] - HP: %d/%d, MP: %d/%d", 
+                                      h.getName(), status, h.getHp(), h.getMaxHp(),
+                                      h.getMp(), h.getMaxMp()));
+        }
+        
+        view.println("\n--- ENEMY MONSTERS ---");
+        for (Monster m : battle.getMonsters()) {
+            if (m.isAlive()) {
+                view.println(m.toString());
+            } else {
+                view.println(String.format("%s [DEFEATED]", m.getName()));
+            }
+        }
+        view.println();
+    }
+    
+    private boolean handleAttack(Battle battle, Hero hero) {
+        List<Monster> aliveMonsters = battle.getAliveMonsters();
+        if (aliveMonsters.isEmpty()) return true;
+        
+        view.println("\nSelect target:");
+        for (int i = 0; i < aliveMonsters.size(); i++) {
+            view.println(String.format("%d. %s", i + 1, aliveMonsters.get(i)));
+        }
+        view.println("0. Cancel");
+        
+        int choice = view.readInt("\nTarget: ", 0, aliveMonsters.size());
+        if (choice == 0) return false;
+        
+        Monster target = aliveMonsters.get(choice - 1);
+        Battle.BattleResult result = battle.heroAttack(hero, target);
+        view.println("\n⚔️  " + result.getMessage());
+        view.waitForEnter();
+        
+        return true;
+    }
+    
+    private boolean handleCastSpell(Battle battle, Hero hero) {
+        List<Spell> spells = hero.getInventory().getSpells();
+        if (spells.isEmpty()) {
+            view.println("\nYou have no spells!");
+            return false;
+        }
+        
+        view.println("\nSelect spell:");
+        for (int i = 0; i < spells.size(); i++) {
+            view.println(String.format("%d. %s", i + 1, spells.get(i)));
+        }
+        view.println("0. Cancel");
+        
+        int spellChoice = view.readInt("\nSpell: ", 0, spells.size());
+        if (spellChoice == 0) return false;
+        
+        Spell spell = spells.get(spellChoice - 1);
+        
+        if (!hero.hasMana(spell.getManaCost())) {
+            view.println("\nNot enough mana!");
+            return false;
+        }
+        
+        List<Monster> aliveMonsters = battle.getAliveMonsters();
+        view.println("\nSelect target:");
+        for (int i = 0; i < aliveMonsters.size(); i++) {
+            view.println(String.format("%d. %s", i + 1, aliveMonsters.get(i)));
+        }
+        view.println("0. Cancel");
+        
+        int targetChoice = view.readInt("\nTarget: ", 0, aliveMonsters.size());
+        if (targetChoice == 0) return false;
+        
+        Monster target = aliveMonsters.get(targetChoice - 1);
+        Battle.BattleResult result = battle.heroCastSpell(hero, spell, target);
+        view.println("\n✨ " + result.getMessage());
+        view.waitForEnter();
+        
+        return true;
+    }
+    
+    private boolean handleUsePotion(Battle battle, Hero hero) {
+        List<Potion> potions = hero.getInventory().getPotions();
+        if (potions.isEmpty()) {
+            view.println("\nYou have no potions!");
+            return false;
+        }
+        
+        view.println("\nSelect potion:");
+        for (int i = 0; i < potions.size(); i++) {
+            view.println(String.format("%d. %s", i + 1, potions.get(i)));
+        }
+        view.println("0. Cancel");
+        
+        int choice = view.readInt("\nPotion: ", 0, potions.size());
+        if (choice == 0) return false;
+        
+        Potion potion = potions.get(choice - 1);
+        Battle.BattleResult result = battle.heroUsePotion(hero, potion);
+        view.println("\n🧪 " + result.getMessage());
+        view.waitForEnter();
+        
+        return true;
+    }
+    
+    private void handleEquipItem(Hero hero) {
+        view.println("\n=== EQUIP ITEM ===");
+        view.println("1. Equip Weapon");
+        view.println("2. Equip Armor");
+        view.println("3. Unequip Weapon");
+        view.println("4. Unequip Armor");
+        view.println("0. Cancel");
+        
+        int choice = view.readInt("\nChoice: ", 0, 4);
+        
+        switch (choice) {
+            case 1:
+                equipWeapon(hero);
+                break;
+            case 2:
+                equipArmor(hero);
+                break;
+            case 3:
+                hero.unequipWeapon();
+                view.println("Weapon unequipped.");
+                break;
+            case 4:
+                hero.unequipArmor();
+                view.println("Armor unequipped.");
+                break;
+        }
+    }
+    
+    private void equipWeapon(Hero hero) {
+        List<Weapon> weapons = hero.getInventory().getWeapons();
+        if (weapons.isEmpty()) {
+            view.println("\nYou have no weapons!");
+            return;
+        }
+        
+        view.println("\nSelect weapon:");
+        for (int i = 0; i < weapons.size(); i++) {
+            view.println(String.format("%d. %s", i + 1, weapons.get(i)));
+        }
+        
+        int choice = view.readInt("\nWeapon: ", 1, weapons.size());
+        Weapon weapon = weapons.get(choice - 1);
+        
+        if (hero.equipWeapon(weapon)) {
+            view.println(String.format("\n✓ Equipped %s!", weapon.getName()));
+        } else {
+            view.println("\nCannot equip that weapon!");
+        }
+    }
+    
+    private void equipArmor(Hero hero) {
+        List<Armor> armors = hero.getInventory().getArmor();
+        if (armors.isEmpty()) {
+            view.println("\nYou have no armor!");
+            return;
+        }
+        
+        view.println("\nSelect armor:");
+        for (int i = 0; i < armors.size(); i++) {
+            view.println(String.format("%d. %s", i + 1, armors.get(i)));
+        }
+        
+        int choice = view.readInt("\nArmor: ", 1, armors.size());
+        Armor armor = armors.get(choice - 1);
+        
+        if (hero.equipArmor(armor)) {
+            view.println(String.format("\n✓ Equipped %s!", armor.getName()));
+        } else {
+            view.println("\nCannot equip that armor!");
+        }
+    }
+    
+    private void handleBattleEnd(Battle battle) {
         view.println();
         view.println("════════════════════════════════════════════");
         
-        if (heroesWon) {
+        if (battle.didHeroesWin()) {
             view.println("║       🎉 VICTORY! 🎉                  ║");
             view.println("════════════════════════════════════════════");
             
@@ -442,33 +721,96 @@ public class GameController {
         }
         
         view.println();
-        // cleanup monsters from top nexus
-        if (worldMap != null) {
-            worldMap.clearMonstersAtTopNexus();
-        }
-
         view.waitForEnter();
     }
     
-    /**
-     * Check if either side has won
-     */
-    private void checkWinConditions() {
-        if (worldMap.anyHeroAtTopNexus()) {
-            view.println("\n=== HEROES WIN: one or more heroes reached the enemy Nexus! ===");
-            gameRunning = false;
-            return;
+    // create monsters to fight (same number as heroes in party)
+    private List<Monster> spawnMonsters() {
+        List<Monster> monsters = new ArrayList<>();
+        int monsterCount = party.size();
+        int targetLevel = getHighestHeroLevel();
+        
+        // Randomly select monster types
+        for (int i = 0; i < monsterCount; i++) {
+            int typeChoice = (int) (Math.random() * 3);
+            Monster monster = null;
+            
+            switch (typeChoice) {
+                case 0: // Dragon
+                    if (!allDragons.isEmpty()) {
+                        monster = createMonsterOfLevel(allDragons, targetLevel);
+                    }
+                    break;
+                case 1: // Exoskeleton
+                    if (!allExoskeletons.isEmpty()) {
+                        monster = createMonsterOfLevel(allExoskeletons, targetLevel);
+                    }
+                    break;
+                case 2: // Spirit
+                    if (!allSpirits.isEmpty()) {
+                        monster = createMonsterOfLevel(allSpirits, targetLevel);
+                    }
+                    break;
+            }
+            
+            if (monster != null) {
+                monsters.add(monster);
+            }
         }
-        if (worldMap.anyMonsterAtBottomNexus()) {
-            view.println("\n=== MONSTERS WIN: monsters reached your Nexus! ===");
-            gameRunning = false;
-            return;
+        
+        // Fallback if no monsters were created
+        if (monsters.isEmpty() && !allDragons.isEmpty()) {
+            monsters.add(createMonsterOfLevel(allDragons, targetLevel));
         }
+        
+        return monsters;
     }
     
-    /**
-     * Quit the game
-     */
+    // create a monster at the specified level using a template
+    private <T extends Monster> Monster createMonsterOfLevel(List<T> templates, int targetLevel) {
+        // Find a template with matching or close level
+        T bestMatch = templates.get(0);
+        int bestDiff = Math.abs(bestMatch.getLevel() - targetLevel);
+        
+        for (T template : templates) {
+            int diff = Math.abs(template.getLevel() - targetLevel);
+            if (diff < bestDiff) {
+                bestMatch = template;
+                bestDiff = diff;
+            }
+        }
+        
+        // Create a new instance based on the template
+        int hp = (int) (bestMatch.getLevel() * GameConstants.MONSTER_HP_MULTIPLIER);
+        
+        if (bestMatch instanceof Dragon) {
+            return new Dragon(bestMatch.getName(), bestMatch.getLevel(), hp,
+                            bestMatch.getBaseDamage(), bestMatch.getDefense(),
+                            bestMatch.getDodgeChance() * 100);
+        } else if (bestMatch instanceof Exoskeleton) {
+            return new Exoskeleton(bestMatch.getName(), bestMatch.getLevel(), hp,
+                                 bestMatch.getBaseDamage(), bestMatch.getDefense(),
+                                 bestMatch.getDodgeChance() * 100);
+        } else if (bestMatch instanceof Spirit) {
+            return new Spirit(bestMatch.getName(), bestMatch.getLevel(), hp,
+                            bestMatch.getBaseDamage(), bestMatch.getDefense(),
+                            bestMatch.getDodgeChance() * 100);
+        }
+        
+        return bestMatch; // Fallback
+    }
+    
+    private int getHighestHeroLevel() {
+        int maxLevel = 1;
+        for (Hero hero : party) {
+            if (hero.getLevel() > maxLevel) {
+                maxLevel = hero.getLevel();
+            }
+        }
+        return maxLevel;
+    }
+    
+    // quit the game
     private void handleQuit() {
         boolean confirm = view.readYesNo("Are you sure you want to quit?");
         if (confirm) {
@@ -476,3 +818,5 @@ public class GameController {
         }
     }
 }
+
+
