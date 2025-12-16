@@ -472,9 +472,20 @@ public class WorldMap {
         if (dest.equals(target)) return false;
 
         // adjacency (including diagonal)
-        int dr = Math.abs(dest.getRow() - target.getRow());
-        int dc = Math.abs(dest.getCol() - target.getCol());
-        if (Math.max(dr, dc) > 1) return false;
+        int dr = dest.getRow() - target.getRow();
+        int dc = dest.getCol() - target.getCol();
+        if (Math.max(Math.abs(dr), Math.abs(dc)) > 1) return false;
+
+        // Disallow teleporting to a diagonal cell that is "behind" the target.
+        // Definition of behind: for a hero mover (isHeroMover==true) rows increase downward,
+        // so a destination with row > target.row is considered behind the target.
+        // For monsters (isHeroMover==false) the opposite applies (row < target.row).
+        // If the destination is diagonally behind (abs(dr)==1 && abs(dc)==1) we reject it;
+        // only the directly-behind cell (same column, dr==+/-1) is allowed.
+        if (Math.abs(dr) == 1 && Math.abs(dc) == 1) {
+            if (isHeroMover && dr > 0) return false; // hero cannot teleport diagonally to the row below
+            if (!isHeroMover && dr < 0) return false; // monster cannot teleport diagonally to the row above
+        }
 
         // lane membership: destination must be in the same lane as target (exact)
         int laneTarget = laneForColumn(target.getCol());
