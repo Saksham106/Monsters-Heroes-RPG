@@ -184,6 +184,10 @@ package "battle" {
     class Battle
 }
 
+package "market" {
+    class Market
+}
+
 package "io" {
     class ConsoleView
     class DataLoader
@@ -216,6 +220,7 @@ package "game (Classic)" {
     GameController --> "battle.Battle" : uses
     GameController --> "io.ConsoleView"
     GameController --> "io.DataLoader"
+    GameController --> "market.Market"
 }
 
 package "world (Classic)" {
@@ -256,8 +261,10 @@ package "game (Valor)" {
     GameContext --> "world.ValorWorldMap"
     GameContext --> "characters.Hero" : party list
     GameContext --> "io.ConsoleView"
+    GameContext --> "market.Market"
     
     GameInitializer --> "io.DataLoader"
+    MarketController --> "market.Market"
 }
 
 package "world (Valor)" {
@@ -276,6 +283,7 @@ Hero "1" *-- "1" "inventory.Inventory"
 Battle o-- Hero
 Battle o-- Monster
 "items.Spell" --> "utils.SpellType"
+"market.Market" o-- Item
 
 @enduml
 ```
