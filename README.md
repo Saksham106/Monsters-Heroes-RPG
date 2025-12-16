@@ -4,17 +4,17 @@
 
 ---------------------------------------------------------------------------
 
-- Name: placeholder
-- Email: placeholder
-- Student ID: placeholder
+- Name: Saksham Goel
+- Email: [Redacted]
+- Student ID: [Redacted]
 
-- Name: placeholder
-- Email: placeholder
-- Student ID: placeholder
+- Name: Adithya Darshan Nayak
+- Email: [Redacted]
+- Student ID: [Redacted]
 
-- Name: placeholder
-- Email: placeholder
-- Student ID: placeholder
+- Name: Nanyu Zhao
+- Email: [Redacted]
+- Student ID: [Redacted]
 
 ## Overview
 
