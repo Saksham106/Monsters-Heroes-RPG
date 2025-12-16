@@ -4,17 +4,17 @@
 
 ---------------------------------------------------------------------------
 
-- Name: Saksham Goel
-- Email: sakshamg@bu.edu
-- Student ID: U45400025
+- Name: placeholder
+- Email: placeholder
+- Student ID: placeholder
 
-- Name: Adithya Darshan Nayak
-- Email: adithyad@bu.edu
-- Student ID: U48974468
+- Name: placeholder
+- Email: placeholder
+- Student ID: placeholder
 
-- Name: Nanyu Zhao
-- Email: nanyuz2@bu.edu
-- Student ID: U52030541
+- Name: placeholder
+- Email: placeholder
+- Student ID: placeholder
 
 ## Overview
 
