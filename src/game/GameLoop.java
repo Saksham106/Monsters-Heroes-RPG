@@ -13,10 +13,45 @@ public class GameLoop {
 
     public void run() {
         ctx.gameRunning = true;
+        MonsterController monsterController = new MonsterController(ctx);
+        MonsterSpawner spawner = new MonsterSpawner(ctx);
+
         while (ctx.gameRunning) {
             displayGameState();
-            commands.processPlayerInput();
+
+            // Heroes' turn: each hero must perform exactly one valid action
+            for (int i = 0; i < ctx.party.size(); i++) {
+                if (!ctx.gameRunning) break;
+                ctx.currentHeroIndex = i;
+                commands.performHeroAction(i);
+            }
+
+            if (!ctx.gameRunning) break;
+
+            // Monsters' turn: each monster acts once
+            monsterController.performMonstersTurn();
+
+            // Process end-of-round effects: respawns, spawn waves, victory checks
+            if (ctx.respawnManager != null) ctx.respawnManager.onRoundEnd();
+
+            ctx.roundCounter++;
+            if (ctx.spawnInterval > 0 && ctx.roundCounter % ctx.spawnInterval == 0) {
+                ctx.view.println("\nA new wave of monsters has appeared at the enemy Nexus!");
+                spawner.spawnMonstersPeriodically();
+            }
+
+            if (ctx.worldMap.anyHeroAtTopNexus()) {
+                ctx.view.println("\n=== HEROES WIN: one or more heroes reached the enemy Nexus! ===");
+                ctx.gameRunning = false;
+                break;
+            }
+            if (ctx.worldMap.anyMonsterAtBottomNexus()) {
+                ctx.view.println("\n=== MONSTERS WIN: monsters reached your Nexus! ===");
+                ctx.gameRunning = false;
+                break;
+            }
         }
+
         ctx.view.println("\nThank you for playing Legends of Valor!");
         ctx.view.close();
     }

@@ -15,11 +15,8 @@ import java.util.Set;
 
 public class MovementController {
     private final GameContext ctx;
-    private final MonsterSpawner spawner;
-
     public MovementController(GameContext ctx) {
         this.ctx = ctx;
-        this.spawner = new MonsterSpawner(ctx);
     }
 
     public void handleHeroMovement(char dir) {
@@ -58,9 +55,7 @@ public class MovementController {
         // apply terrain bonus for new tile
         applyTerrainBonus(hero, to);
 
-        ctx.worldMap.stepMonsters();
-
-        List<Monster> encountered = collectMonstersInRangeOf(hero);
+    List<Monster> encountered = collectMonstersInRangeOf(hero);
         if (!encountered.isEmpty()) {
             ctx.view.println("\n*** A battle has been triggered by proximity to monsters! ***");
             Battle battle = new Battle(java.util.Arrays.asList(hero), encountered);
@@ -68,14 +63,7 @@ public class MovementController {
             bc.runBattle(battle);
         }
 
-        ctx.roundCounter++;
-        if (ctx.spawnInterval > 0 && ctx.roundCounter % ctx.spawnInterval == 0) {
-            ctx.view.println("\nA new wave of monsters has appeared at the enemy Nexus!");
-            spawner.spawnMonstersPeriodically();
-        }
-
-        // process scheduled respawns at the end of the round
-        if (ctx.respawnManager != null) ctx.respawnManager.onRoundEnd();
+        // NOTE: Monster actions and round progression are handled centrally by GameLoop.
 
         if (ctx.worldMap.anyHeroAtTopNexus()) {
             ctx.view.println("\n=== HEROES WIN: one or more heroes reached the enemy Nexus! ===");
@@ -191,14 +179,8 @@ public class MovementController {
         if (ok) {
             ctx.view.println("You removed the obstacle at " + target + ". It is now plain.");
 
-            // Removing an obstacle consumes a turn: step monsters and advance round
-            ctx.worldMap.stepMonsters();
-            ctx.roundCounter++;
-            if (ctx.spawnInterval > 0 && ctx.roundCounter % ctx.spawnInterval == 0) {
-                ctx.view.println("\nA new wave of monsters has appeared at the enemy Nexus!");
-                spawner.spawnMonstersPeriodically();
-            }
-            if (ctx.respawnManager != null) ctx.respawnManager.onRoundEnd();
+            // Removing an obstacle consumes the hero's action; the monsters' turn
+            // and round progression are processed by GameLoop after all heroes act.
         } else {
             ctx.view.println("Failed to remove obstacle (it may have been removed already).");
         }

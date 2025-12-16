@@ -60,6 +60,50 @@ public class CommandProcessor {
         }
     }
 
+    /**
+     * Perform exactly one valid action for the specified hero.
+     * Returns false if the game was ended (quit) during the action.
+     */
+    public boolean performHeroAction(int heroIndex) {
+        if (heroIndex < 0 || heroIndex >= ctx.party.size()) return true;
+        ctx.currentHeroIndex = heroIndex;
+        Hero hero = ctx.party.get(heroIndex);
+
+        while (ctx.gameRunning) {
+            ctx.view.print(String.format("Action for %s (W/A/S/D move, T=Teleport, R=Recall, E=RemoveObstacle, M=Market, I=Info, Q=Quit): ", hero.getName()));
+            String input = ctx.view.readLine().trim().toUpperCase();
+            if (input.isEmpty()) continue;
+            char command = input.charAt(0);
+
+            switch (command) {
+                case 'W': case 'A': case 'S': case 'D':
+                    movementController.handleHeroMovement(command);
+                    return ctx.gameRunning;
+                case 'T':
+                    movementController.handleTeleport();
+                    return ctx.gameRunning;
+                case 'R':
+                    movementController.handleRecall();
+                    return ctx.gameRunning;
+                case 'E':
+                    movementController.removeAdjacentObstacle();
+                    return ctx.gameRunning;
+                case 'M':
+                    marketController.handleMarket();
+                    return ctx.gameRunning;
+                case 'I':
+                    displayInfo();
+                    break; // does not consume action
+                case 'Q':
+                    handleQuit();
+                    return ctx.gameRunning;
+                default:
+                    ctx.view.println("Invalid command!");
+            }
+        }
+        return ctx.gameRunning;
+    }
+
     private void displayInfo() {
         ctx.view.println("\n=== PARTY INFORMATION ===");
         for (Hero hero : ctx.party) {
