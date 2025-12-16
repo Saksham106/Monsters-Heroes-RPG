@@ -60,12 +60,31 @@ public class MovementController {
 
         ctx.worldMap.stepMonsters();
 
-        List<Monster> encountered = collectMonstersInRangeOf(hero);
-        if (!encountered.isEmpty()) {
+        java.util.Map<Monster, Position> encounteredMap = collectMonstersPositionsInRangeOf(hero);
+        if (!encounteredMap.isEmpty()) {
             ctx.view.println("\n*** A battle has been triggered by proximity to monsters! ***");
+            java.util.List<Monster> encountered = new java.util.ArrayList<>(encounteredMap.keySet());
+
+            // remove monsters from board while battle takes place
+            for (Position mp : encounteredMap.values()) {
+                if (mp != null) ctx.worldMap.removeMonster(mp);
+            }
+
             Battle battle = new Battle(java.util.Arrays.asList(hero), encountered);
             BattleController bc = new BattleController(ctx);
-            bc.runBattle(battle);
+            boolean heroesWon = bc.runBattle(battle);
+
+            // If monsters won, put them back on the board at their original positions
+            if (!heroesWon) {
+                for (java.util.Map.Entry<Monster, Position> e : encounteredMap.entrySet()) {
+                    Monster m = e.getKey();
+                    Position p = e.getValue();
+                    if (p != null) {
+                        boolean ok = ctx.worldMap.placeMonster(p, m);
+                        if (!ok) ctx.view.println("Warning: failed to restore monster at " + p);
+                    }
+                }
+            }
         }
 
         ctx.roundCounter++;
@@ -204,27 +223,24 @@ public class MovementController {
         }
     }
 
-    private List<Monster> collectMonstersInRangeOf(Hero hero) {
-        Set<Monster> set = new HashSet<>();
+    private java.util.Map<Monster, Position> collectMonstersPositionsInRangeOf(Hero hero) {
+        java.util.Map<Monster, Position> map = new java.util.HashMap<>();
         Position hp = ctx.worldMap.getHeroPosition(hero);
-        if (hp == null) return new ArrayList<>();
+        if (hp == null) return map;
 
         for (int r = 0; r < ctx.worldMap.getSize(); r++) {
             for (int c = 0; c < ctx.worldMap.getSize(); c++) {
                 Position mp = new Position(r, c);
                 world.Cell cell = ctx.worldMap.getCellAt(mp);
                 if (cell != null && cell.hasMonster()) {
-                    if (ctx.worldMap.isInRange(hp, mp)) set.add(cell.getMonster());
+                    if (ctx.worldMap.isInRange(hp, mp)) {
+                        map.put(cell.getMonster(), mp);
+                    }
                 }
             }
         }
 
-        List<Monster> list = new ArrayList<>(set);
-        for (Monster m : list) {
-            Position mp = ctx.worldMap.getMonsterPosition(m);
-            if (mp != null) ctx.worldMap.removeMonster(mp);
-        }
-        return list;
+        return map;
     }
 
     // Apply terrain bonus to hero based on cell type at position

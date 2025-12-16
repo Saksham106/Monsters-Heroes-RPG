@@ -3,6 +3,7 @@ package world;
 import characters.Hero;
 import characters.Monster;
 import utils.TileType;
+import utils.AnsiColor;
 import utils.GameConstants;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -326,9 +327,12 @@ public class ValorWorldMap {
         if (!isValidPosition(pos)) return false;
         Cell c = getCellAt(pos);
         if (!c.hasMonster()) return false;
-        Monster m = c.getMonster();
         c.removeMonster();
-        if (m != null) monsterIds.remove(m);
+        // Do NOT remove the monster id mapping here. We want stable short-ids
+        // for monsters even if they are temporarily removed for battles so that
+        // restored monsters keep their original 'M#' identifier. Removing the
+        // mapping would cause a different id to be assigned when the same
+        // Monster object is placed back on the board.
         return true;
     }
 
@@ -673,8 +677,18 @@ public class ValorWorldMap {
             sb.append('\n');
         }
 
-        sb.append("\nLegend: N=Nexus, X=Wall(Inaccessible), O=Obstacle, .=Plain, B=Bush, C=Cave, K=Koulou\n");
-        sb.append("Occupancy: H# = hero (level shown), M# = monster. H#/M# indicates co-occupancy.\n");
+        // Legend with colors
+        sb.append("\nLegend: ");
+        sb.append(AnsiColor.colorize("N", AnsiColor.YELLOW)).append("=Nexus, ");
+        sb.append(AnsiColor.colorize("X", AnsiColor.WHITE)).append("=Wall(Inaccessible), ");
+        sb.append(AnsiColor.colorize("O", AnsiColor.RED)).append("=Obstacle, ");
+        sb.append(".=Plain, ");
+        sb.append(AnsiColor.colorize("B", AnsiColor.GREEN)).append("=Bush, ");
+        sb.append(AnsiColor.colorize("C", AnsiColor.CYAN)).append("=Cave, ");
+        sb.append(AnsiColor.colorize("K", AnsiColor.MAGENTA)).append("=Koulou\n");
+        sb.append("Occupancy: ");
+        sb.append(AnsiColor.colorize("H#", AnsiColor.GREEN)).append(" = hero (level shown), ");
+        sb.append(AnsiColor.colorize("M#", AnsiColor.RED)).append(" = monster. H#/M# indicates co-occupancy.\n");
         return sb.toString();
     }
 

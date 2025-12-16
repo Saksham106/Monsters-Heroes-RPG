@@ -2,6 +2,7 @@ package world;
 
 import characters.Hero;
 import characters.Monster;
+import utils.AnsiColor;
 
 // Single board cell that can hold at most one hero and one monster (co-occupancy allowed)
 public class Cell {
@@ -95,19 +96,41 @@ public class Cell {
         if (hasHero() && hasMonster()) {
             String h = heroId != null ? heroId : shortHeroId(hero);
             String m = monsterId != null ? monsterId : shortMonsterId(monster);
-            return String.format("%s/%s", padCenter(h,3), padCenter(m,3));
+            // Hero (green) / Monster (red)
+            String hs = AnsiColor.colorize(padCenter(h,3), AnsiColor.GREEN);
+            String ms = AnsiColor.colorize(padCenter(m,3), AnsiColor.RED);
+            return String.format("%s/%s", hs, ms);
         }
         if (hasHero()) {
             String h = heroId != null ? heroId : shortHeroId(hero);
-            return padCenter(h, 6);
+            return AnsiColor.colorize(padCenter(h,6), AnsiColor.GREEN);
         }
         if (hasMonster()) {
             String m = monsterId != null ? monsterId : shortMonsterId(monster);
-            return padCenter(m, 6);
+            return AnsiColor.colorize(padCenter(m,6), AnsiColor.RED);
         }
 
         // No occupants: render by cell type
-        return padCenter(String.valueOf(type.getSymbol()), 6);
+        String sym = String.valueOf(type.getSymbol());
+        switch (type) {
+            case NEXUS:
+                return AnsiColor.colorize(padCenter(sym,6), AnsiColor.YELLOW);
+            case INACCESSIBLE:
+                return AnsiColor.colorize(padCenter(sym,6), AnsiColor.WHITE);
+            case OBSTACLE:
+                return AnsiColor.colorize(padCenter(sym,6), AnsiColor.RED);
+            case BUSH:
+                return AnsiColor.colorize(padCenter(sym,6), AnsiColor.GREEN);
+            case CAVE:
+                return AnsiColor.colorize(padCenter(sym,6), AnsiColor.CYAN);
+            case KOULOU:
+                return AnsiColor.colorize(padCenter(sym,6), AnsiColor.MAGENTA);
+            case MARKET:
+                return AnsiColor.colorize(padCenter(sym,6), AnsiColor.BLUE);
+            case PLAIN:
+            default:
+                return padCenter(sym,6);
+        }
     }
 
     private String shortHeroId(Hero h) {

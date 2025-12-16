@@ -37,7 +37,7 @@ public class BattleController {
         runBattle(battle);
     }
 
-    public void runBattle(Battle battle) {
+    public boolean runBattle(Battle battle) {
         ctx.view.println();
         ctx.view.println("╔════════════════════════════════════════════════════════════╗");
         ctx.view.println("║                  ⚔️  BATTLE BEGINS! ⚔️                      ║");
@@ -52,22 +52,29 @@ public class BattleController {
 
         int roundNumber = 1;
         while (!battle.isBattleEnded()) {
+            if (!ctx.gameRunning) {
+                // Player requested quit during battle — abort the battle loop and
+                // return false so callers know the heroes did not complete a victory.
+                return false;
+            }
             ctx.view.println();
             ctx.view.println("════════════════ ROUND " + roundNumber + " ════════════════");
             ctx.view.println();
 
             for (Hero hero : battle.getAliveHeroes()) {
                 if (battle.isBattleEnded()) break;
+                if (!ctx.gameRunning) break;
                 displayBattleStatus(battle);
                 handleHeroTurn(battle, hero);
             }
 
-            if (battle.isBattleEnded()) break;
+            if (battle.isBattleEnded() || !ctx.gameRunning) break;
 
             ctx.view.println("\n--- MONSTERS' TURN ---");
             List<Battle.BattleResult> monsterResults = battle.monstersAttackPhase();
             for (Battle.BattleResult result : monsterResults) {
                 ctx.view.println("• " + result.getMessage());
+                if (!ctx.gameRunning) break;
             }
             ctx.view.waitForEnter();
 
@@ -76,7 +83,14 @@ public class BattleController {
             roundNumber++;
         }
 
+        if (!ctx.gameRunning) {
+            // If the player quit during the battle, don't run the normal end-of-battle
+            // resolution UI — just return false to indicate no hero victory.
+            return false;
+        }
+
         handleBattleEnd(battle);
+        return battle.didHeroesWin();
     }
 
     private void displayBattleStatus(Battle battle) {
@@ -117,10 +131,19 @@ public class BattleController {
             ctx.view.println("3. Use Potion");
             ctx.view.println("4. Equip Item");
             ctx.view.println("5. View Info");
+            ctx.view.println("0. Quit Game");
 
-            int choice = ctx.view.readInt("\nYour action: ", 1, 5);
+            int choice = ctx.view.readInt("\nYour action: ", 0, 5);
 
             switch (choice) {
+                case 0:
+                    boolean confirm = ctx.view.readYesNo("Are you sure you want to quit the game?");
+                    if (confirm) {
+                        ctx.gameRunning = false;
+                        // End current turn/battle flow
+                        return;
+                    }
+                    break;
                 case 1:
                     turnComplete = handleAttack(battle, hero);
                     break;

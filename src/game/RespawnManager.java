@@ -33,7 +33,7 @@ public class RespawnManager {
             ctx.worldMap.detachHeroFromCell(cur);
         }
 
-        respawnTimers.put(h, 1); // respawn after 1 round
+        respawnTimers.put(h, 3); // respawn after 3 rounds
         ctx.view.println(String.format("%s will respawn at their Nexus after 1 round.", h.getName()));
     }
 
