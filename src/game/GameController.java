@@ -10,13 +10,14 @@ import battle.Battle;
 import io.ConsoleView;
 import io.DataLoader;
 import utils.GameConstants;
+import game.helpers.MarketHandler;
+import game.helpers.BattleUiHelper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Arrays;
-import java.util.Collections;
 
 // Main game controller - runs the whole game
 // Handles setup, game loop, movement, battles, markets, etc.
@@ -39,11 +40,13 @@ public class GameController {
     private List<Dragon> allDragons;
     private List<Exoskeleton> allExoskeletons;
     private List<Spirit> allSpirits;
+    private final MarketHandler marketHandler;
     
     public GameController() {
         this.view = new ConsoleView();
         this.gameRunning = false;
         this.markets = new ArrayList<>();
+        this.marketHandler = new MarketHandler(this.view);
     }
     
     // set up the game - load data, create party, create world
@@ -67,10 +70,10 @@ public class GameController {
         view.println("3) Hard (spawn every 2 rounds)");
         int diff = view.readInt("Difficulty: ", 1, 3);
         switch (diff) {
-            case 1: spawnInterval = 10; break;
-            case 2: spawnInterval = 6; break;
-            case 3: spawnInterval = 4; break;
-            default: spawnInterval = 10; break;
+            case 1: spawnInterval = 6; break;
+            case 2: spawnInterval = 4; break;
+            case 3: spawnInterval = 2; break;
+            default: spawnInterval = 4; break;
         }
         
         // Create markets
@@ -281,15 +284,14 @@ public class GameController {
     }
     
     // move party to new position and check for battles
+    // legacy helper unused in the Valor flow; kept for compatibility but suppressed
+    @SuppressWarnings("unused")
     private void handleMovement(Position newPosition) {
         if (!worldMap.moveParty(newPosition)) {
             view.println("Cannot move there!");
             return;
         }
-        
         view.println("Party moved to " + newPosition);
-        
-        // Check for battle trigger
         if (worldMap.shouldTriggerBattle()) {
             view.println("\n*** A wild monster appears! ***");
             startBattle();
@@ -349,16 +351,16 @@ public class GameController {
             
             switch (choice) {
                 case 1:
-                    displayMarketItems(market);
+                    marketHandler.displayMarketItems(market);
                     break;
                 case 2:
-                    handleBuyItem(market, currentHero);
+                    marketHandler.handleBuyItem(market, currentHero);
                     break;
                 case 3:
-                    handleSellItem(market, currentHero);
+                    marketHandler.handleSellItem(market, currentHero);
                     break;
                 case 4:
-                    displayHeroInventory(currentHero);
+                    marketHandler.displayHeroInventory(currentHero);
                     break;
                 case 5:
                     if (party.size() > 1) {
@@ -375,83 +377,6 @@ public class GameController {
                     break;
             }
         }
-    }
-    
-    private void displayMarketItems(Market market) {
-        view.println("\n=== MARKET INVENTORY ===");
-        List<Item> items = market.getItemsForSale();
-        if (items.isEmpty()) {
-            view.println("The market is out of stock!");
-            return;
-        }
-        
-        for (int i = 0; i < items.size(); i++) {
-            view.println(String.format("%d. %s", i + 1, items.get(i)));
-        }
-    }
-    
-    private void handleBuyItem(Market market, Hero hero) {
-        List<Item> items = market.getItemsForSale();
-        if (items.isEmpty()) {
-            view.println("\nThe market has no items for sale!");
-            return;
-        }
-        
-        displayMarketItems(market);
-        view.println(String.format("\nYour gold: %d", hero.getGold()));
-        view.println("0. Cancel");
-        
-        int choice = view.readInt("\nWhich item to buy? ", 0, items.size());
-        if (choice == 0) {
-            return;
-        }
-        
-        Item item = items.get(choice - 1);
-        Market.TransactionResult result = market.buyItem(hero, item);
-        view.println("\n" + result.getMessage());
-        
-        if (result.isSuccess()) {
-            view.println(String.format("Remaining gold: %d", hero.getGold()));
-        }
-    }
-    
-    private void handleSellItem(Market market, Hero hero) {
-        List<Item> items = hero.getInventory().getAllItems();
-        if (items.isEmpty()) {
-            view.println("\nYou have no items to sell!");
-            return;
-        }
-        
-        view.println("\n=== YOUR INVENTORY ===");
-        for (int i = 0; i < items.size(); i++) {
-            Item item = items.get(i);
-            int sellPrice = item.getPrice() / 2;
-            view.println(String.format("%d. %s (Sell for: %d gold)", i + 1, item, sellPrice));
-        }
-        view.println("0. Cancel");
-        
-        int choice = view.readInt("\nWhich item to sell? ", 0, items.size());
-        if (choice == 0) {
-            return;
-        }
-        
-        Item item = items.get(choice - 1);
-        Market.TransactionResult result = market.sellItem(hero, item);
-        view.println("\n" + result.getMessage());
-        
-        if (result.isSuccess()) {
-            view.println(String.format("New gold total: %d", hero.getGold()));
-        }
-    }
-    
-    private void displayHeroInventory(Hero hero) {
-        view.println("\n=== INVENTORY: " + hero.getName() + " ===");
-        view.println(hero.getInventory().toString());
-        view.println("\nEquipped:");
-        view.println("  Weapon: " + (hero.getEquippedWeapon() != null ? 
-                                     hero.getEquippedWeapon().getName() : "None"));
-        view.println("  Armor: " + (hero.getEquippedArmor() != null ? 
-                                    hero.getEquippedArmor().getName() : "None"));
     }
     
     // start a battle with randomly spawned monsters
@@ -512,26 +437,7 @@ public class GameController {
     }
     
     private void displayBattleStatus(Battle battle) {
-        view.println("\n=== HEROES ===");
-        for (Hero hero : battle.getHeroes()) {
-            if (hero.isAlive()) {
-                view.println(String.format("  ✓ %s - HP: %d/%d, MP: %d/%d", 
-                                         hero.getName(), hero.getHp(), hero.getMaxHp(),
-                                         hero.getMp(), hero.getMaxMp()));
-            } else {
-                view.println(String.format("  ✗ %s - FAINTED", hero.getName()));
-            }
-        }
-        
-        view.println("\n=== MONSTERS ===");
-        int monsterNum = 1;
-        for (Monster monster : battle.getMonsters()) {
-            if (monster.isAlive()) {
-                view.println(String.format("  %d. %s", monsterNum, monster));
-                monsterNum++;
-            }
-        }
-        view.println();
+        BattleUiHelper.displayBattleStatus(view, battle);
     }
     
     private void handleHeroTurn(Battle battle, Hero hero) {
@@ -624,6 +530,9 @@ public class GameController {
             spawnMonstersPeriodically();
         }
 
+        // end-of-turn regen for all living heroes (10% HP/MP) per Valor rules
+        regenerateHeroesOverworld();
+
         // Check end conditions after movement and monster step
         if (worldMap.anyHeroAtTopNexus()) {
             view.println("\n=== HEROES WIN: one or more heroes reached the enemy Nexus! ===");
@@ -635,6 +544,8 @@ public class GameController {
             gameRunning = false;
             return;
         }
+
+        // regen already handled after movement per hero
     }
 
     // Teleport the currently selected hero relative to a target hero (uses WorldMap.applyTeleportRules)
@@ -780,27 +691,7 @@ public class GameController {
     }
     
     private void displayDetailedBattleInfo(Battle battle, Hero hero) {
-        view.println("\n=== DETAILED BATTLE INFORMATION ===");
-        view.println("\n--- YOUR HERO ---");
-        view.println(hero.getDetailedStats());
-        
-        view.println("\n--- ALL HEROES ---");
-        for (Hero h : battle.getHeroes()) {
-            String status = h.isAlive() ? "ALIVE" : "FAINTED";
-            view.println(String.format("%s [%s] - HP: %d/%d, MP: %d/%d", 
-                                      h.getName(), status, h.getHp(), h.getMaxHp(),
-                                      h.getMp(), h.getMaxMp()));
-        }
-        
-        view.println("\n--- ENEMY MONSTERS ---");
-        for (Monster m : battle.getMonsters()) {
-            if (m.isAlive()) {
-                view.println(m.toString());
-            } else {
-                view.println(String.format("%s [DEFEATED]", m.getName()));
-            }
-        }
-        view.println();
+        BattleUiHelper.displayDetailedBattleInfo(view, battle, hero);
     }
     
     private boolean handleAttack(Battle battle, Hero hero) {
@@ -997,6 +888,17 @@ public class GameController {
         }
 
         view.waitForEnter();
+    }
+
+    // Overworld regeneration: 10% HP/MP for all living heroes at the end of each hero turn
+    private void regenerateHeroesOverworld() {
+        for (Hero h : party) {
+            if (!h.isAlive()) continue;
+            int heal = (int) Math.ceil(h.getMaxHp() * GameConstants.HP_REGEN_RATE);
+            int mana = (int) Math.ceil(h.getMaxMp() * GameConstants.MP_REGEN_RATE);
+            h.setHp(Math.min(h.getMaxHp(), h.getHp() + heal));
+            h.setMp(Math.min(h.getMaxMp(), h.getMp() + mana));
+        }
     }
     
     // create monsters to fight (same number as heroes in party)
