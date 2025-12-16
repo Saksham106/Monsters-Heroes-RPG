@@ -40,6 +40,11 @@ public class GameConstants {
     
     // Market Configuration
     public static final double SELL_PRICE_MULTIPLIER = 0.5; // Sell for half price
+
+    // Terrain bonuses (flat increases while standing on tile)
+    public static final int BUSH_DEX_BONUS = 2;
+    public static final int CAVE_AGI_BONUS = 2;
+    public static final int KOULOU_STR_BONUS = 2;
     
     // private constructor so you can't create instances of this class
     private GameConstants() {}

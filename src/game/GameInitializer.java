@@ -28,6 +28,9 @@ public class GameInitializer {
 
         ctx.worldMap = new ValorWorldMap(GameConstants.WORLD_SIZE);
 
+    // create a shared respawn manager for the game
+    ctx.respawnManager = new RespawnManager(ctx);
+
         // Choose difficulty
         ctx.view.println("\nSelect difficulty:");
         ctx.view.println("1) Easy (spawn every 6 rounds)");
@@ -47,6 +50,13 @@ public class GameInitializer {
         for (int i = 0; i < ctx.party.size(); i++) {
             Position spawn = ctx.worldMap.getHeroNexusSpawn(i);
             ctx.worldMap.placeHero(spawn, ctx.party.get(i));
+        }
+
+        // Apply terrain bonuses for any hero initially placed on special tiles
+        MovementController mc = new MovementController(ctx);
+        for (Hero h : ctx.party) {
+            Position p = ctx.worldMap.getHeroPosition(h);
+            if (p != null) mc.applyTerrainBonus(h, p);
         }
 
         // spawn initial monsters so they render on board

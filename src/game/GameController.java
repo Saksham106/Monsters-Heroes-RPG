@@ -713,11 +713,13 @@ public class GameController {
             view.println("\nFainted heroes have been revived!");
             
         } else {
+            // Do not end the entire game when heroes lose a battle; allow continuation.
             view.println("║       💀 DEFEAT! 💀                   ║");
             view.println("════════════════════════════════════════════");
             view.println("\nAll heroes have fallen...");
-            view.println("\n=== GAME OVER ===");
-            gameRunning = false;
+            // Revive fainted heroes so the player can continue exploring.
+            battle.reviveFaintedHeroes();
+            view.println("\nFainted heroes have been revived and the adventure continues.");
         }
         
         view.println();

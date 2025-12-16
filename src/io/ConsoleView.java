@@ -165,7 +165,14 @@ public class ConsoleView {
     
     // close the scanner
     public void close() {
-        scanner.close();
+        // Do not close the underlying System.in stream here.
+        // Closing the Scanner would close System.in which can break other
+        // parts of the application that still read from the console
+        // (for example, the GameModeChooser has its own ConsoleView).
+        // Keep close() as a no-op to avoid IllegalStateException on reuse.
+        // If a real resource cleanup is needed, manage a single shared
+        // ConsoleView instance at application level instead.
+        // Intentionally left blank.
     }
 }
 

@@ -15,7 +15,7 @@ public class CommandProcessor {
     }
 
     public void processPlayerInput() {
-        ctx.view.print("Enter command (1-3 to select hero, W/A/S/D to move selected, T=Teleport, R=Recall, I/M/Q): ");
+        ctx.view.print("Enter command (1-3 to select hero, W/A/S/D to move, T=Teleport, R=Recall, E=RemoveObstacle, I/M/Q): ");
         String input = ctx.view.readLine().trim().toUpperCase();
 
         if (input.isEmpty()) return;
@@ -42,6 +42,9 @@ public class CommandProcessor {
                 break;
             case 'R':
                 movementController.handleRecall();
+                break;
+            case 'E':
+                movementController.removeAdjacentObstacle();
                 break;
             case 'I':
                 displayInfo();

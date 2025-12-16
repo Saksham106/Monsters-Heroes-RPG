@@ -316,15 +316,29 @@ public class BattleController {
                         hero.getExperience(), hero.getGold()));
             }
 
-            battle.reviveFaintedHeroes();
-            ctx.view.println("\nFainted heroes have been revived!");
+            // Schedule fainted heroes to respawn at their Nexus after one round
+            RespawnManager rm = ctx.respawnManager != null ? ctx.respawnManager : new RespawnManager(ctx);
+            for (Hero hero : battle.getHeroes()) {
+                if (hero.isFainted()) {
+                    rm.scheduleRespawn(hero);
+                }
+            }
+            ctx.view.println("\nFainted heroes will respawn at their Nexus after 1 round.");
 
         } else {
+            // When heroes are all defeated in a battle, do not end the entire game.
+            // Schedule fainted heroes to respawn at their Nexus after one round and continue.
             ctx.view.println("║       💀 DEFEAT! 💀                   ║");
             ctx.view.println("════════════════════════════════════════════");
-            ctx.view.println("\nAll heroes have fallen...");
-            ctx.view.println("\n=== GAME OVER ===");
-            ctx.gameRunning = false;
+            ctx.view.println("\nAll heroes have fallen in combat...");
+
+            RespawnManager rm = ctx.respawnManager != null ? ctx.respawnManager : new RespawnManager(ctx);
+            for (Hero hero : battle.getHeroes()) {
+                if (hero.isFainted()) {
+                    rm.scheduleRespawn(hero);
+                }
+            }
+            ctx.view.println("\nFainted heroes will respawn at their Nexus after 1 round.");
         }
 
         if (ctx.worldMap != null) {

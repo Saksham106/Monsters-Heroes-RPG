@@ -25,8 +25,14 @@ public class MarketController {
             return;
         }
         world.Cell currentCell = ctx.worldMap.getCellAt(heroPos);
-        if (currentCell == null || currentCell.getType() != world.CellType.MARKET) {
-            ctx.view.println("You are not at a market!");
+        if (currentCell == null) {
+            ctx.view.println("Selected hero is not on a valid tile!");
+            return;
+        }
+
+        // Allow entering the market when standing on a MARKET tile or at the NEXUS
+        if (currentCell.getType() != world.CellType.MARKET && currentCell.getType() != world.CellType.NEXUS) {
+            ctx.view.println("You are not at a market or nexus!");
             return;
         }
 
