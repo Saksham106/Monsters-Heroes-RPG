@@ -10,9 +10,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * Manages hero respawns after they faint in battle.
+ * Tracks countdown timers and brings heroes back at their nexus after a delay.
+ */
 public class RespawnManager {
     private final GameContext ctx;
-    // map hero -> rounds remaining until respawn
+    // Tracks how many rounds until each fainted hero respawns
     private final Map<Hero, Integer> respawnTimers = new HashMap<>();
 
     public RespawnManager(GameContext ctx) {
@@ -38,25 +42,27 @@ public class RespawnManager {
     }
 
     /**
-     * Called at the end of a world round. Decrements timers and respawns any heroes
-     * whose timers reach zero.
+     * Called at the end of each round. Counts down timers and respawns heroes when ready.
      */
     public void onRoundEnd() {
         if (respawnTimers.isEmpty()) return;
+        
         Iterator<Map.Entry<Hero, Integer>> it = respawnTimers.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Hero, Integer> e = it.next();
             Hero h = e.getKey();
             int remaining = e.getValue() - 1;
+            
             if (remaining <= 0) {
-                // perform respawn
+                // Time to respawn this hero
                 int idx = ctx.party.indexOf(h);
                 Position spawn = idx >= 0 ? ctx.worldMap.getHeroNexusSpawn(idx) : null;
+                
                 if (spawn != null && ctx.worldMap.canEnter(spawn, true)) {
                     h.revive();
                     ctx.worldMap.placeHero(spawn, h);
 
-                    // re-apply terrain bonuses if any
+                    // If nexus has terrain effects, apply them
                     Cell c = ctx.worldMap.getCellAt(spawn);
                     if (c != null) {
                         CellType t = c.getType();
@@ -80,18 +86,18 @@ public class RespawnManager {
                         ctx.view.println(String.format("%s has respawned at their Nexus.", h.getName()));
                     }
                 } else {
-                    // cannot place at spawn (occupied?) - try to find any spawn tile
+                    // Spawn is blocked, try again next round
                     if (spawn != null) {
                         ctx.view.println(String.format("%s's Nexus spawn is occupied, respawn delayed.", h.getName()));
-                        e.setValue(1); // try again next round
+                        e.setValue(1); // Retry next round
                         continue;
                     } else {
                         ctx.view.println(String.format("No valid Nexus spawn for %s; cannot respawn.", h.getName()));
                     }
                 }
-                it.remove();
+                it.remove(); // Done respawning this hero
             } else {
-                e.setValue(remaining);
+                e.setValue(remaining); // Still counting down
             }
         }
     }

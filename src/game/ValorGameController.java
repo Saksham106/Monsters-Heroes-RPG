@@ -3,7 +3,17 @@ package game;
 import io.ConsoleView;
 
 /**
- * Thin orchestrator that composes the new controllers.
+ * Main controller for Legends of Valor mode.
+ * 
+ * Instead of doing everything itself (like Classic mode's GameController),
+ * this creates specialized controllers and lets them handle their own parts:
+ * - GameInitializer sets up the game
+ * - GameLoop runs the main turn cycle
+ * - CommandProcessor handles input
+ * - MovementController handles movement/battles
+ * - etc.
+ * 
+ * They all share state through GameContext.
  */
 public class ValorGameController {
     private final GameContext ctx;

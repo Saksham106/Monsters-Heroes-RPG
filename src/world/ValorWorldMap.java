@@ -12,20 +12,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-// World map - 8x8 board with 3 vertical lanes separated by walls.
-// Implements board mechanics (movement, teleport, recall, terrain, rendering).
+/**
+ * 8x8 board with 3 vertical lanes for Legends of Valor.
+ * 
+ * Lane layout:
+ * - Left lane: columns 0-1
+ * - Middle lane: columns 3-4  
+ * - Right lane: columns 6-7
+ * - Walls: columns 2 and 5 (inaccessible)
+ * 
+ * Features: co-occupancy, blocking, teleport, recall, obstacles, terrain bonuses
+ */
 public class ValorWorldMap {
     private final int size;
     private final Cell[][] grid;
     private final Random random;
     private Position partyPosition;
-    // id maps for stable short ids used in rendering
+    
+    // Stable IDs for rendering (H1, M2, etc.) that persist across respawns
     private final Map<Hero, Integer> heroIds = new HashMap<>();
     private final Map<Monster, Integer> monsterIds = new HashMap<>();
-    // remember the original lane index a hero was assigned to (based on initial spawn)
+    
+    // Track which lane each hero started in (for recall/respawn)
     private final Map<Hero, Integer> heroLane = new HashMap<>();
 
-    // lane column groups: left, middle, right
+    // Lane definitions: which columns belong to each lane
     private final int[][] lanes = new int[][] { {0,1}, {3,4}, {6,7} };
     private final int[] wallColumns = new int[] {2,5};
 
@@ -47,30 +58,40 @@ public class ValorWorldMap {
         return size;
     }
 
+    /**
+     * Generate the 3-lane board with random terrain.
+     * 
+     * Board structure:
+     * - Top row = monster nexus spawns
+     * - Bottom row = hero nexus spawns
+     * - Columns 2 & 5 = walls
+     * - Random terrain sprinkled throughout lanes
+     * - Guaranteed at least one path per lane from top to bottom
+     */
     private void generateBoard() {
-        // initialize all cells to plain first
+        // Start with all plain tiles
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 grid[r][c] = new Cell(CellType.PLAIN);
             }
         }
 
-        // place wall columns (inaccessible)
+        // Create the vertical walls between lanes
         for (int wc : wallColumns) {
             for (int r = 0; r < size; r++) {
                 grid[r][wc].setType(CellType.INACCESSIBLE);
             }
         }
 
-        // place nexus rows at top (monsters) and bottom (heroes) but only on lane columns
+        // Top and bottom rows = nexus (spawn points)
         for (int[] lane : lanes) {
             for (int col : lane) {
-                grid[0][col].setType(CellType.NEXUS);
-                grid[size - 1][col].setType(CellType.NEXUS);
+                grid[0][col].setType(CellType.NEXUS); // Monster spawn
+                grid[size - 1][col].setType(CellType.NEXUS); // Hero spawn
             }
         }
 
-        // collect eligible positions for special tiles (exclude nexus and walls)
+        // Find all plain spots where we can put special terrain
         List<int[]> elig = new ArrayList<>();
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
@@ -81,7 +102,7 @@ public class ValorWorldMap {
             }
         }
 
-        // ensure at least one of each special type exists on map
+        // Make sure at least one of each special terrain exists
         CellType[] special = new CellType[] { CellType.OBSTACLE, CellType.BUSH, CellType.CAVE, CellType.KOULOU };
         Collections.shuffle(elig, random);
         int pick = 0;
@@ -91,7 +112,7 @@ public class ValorWorldMap {
             grid[pos[0]][pos[1]].setType(st);
         }
 
-        // Fill the remaining eligible cells randomly so we have a mix (not all special)
+        // Fill remaining spots with random terrain (weighted probabilities)
         for (int i = pick; i < elig.size(); i++) {
             int[] pos = elig.get(i);
             double r = random.nextDouble();
@@ -102,7 +123,7 @@ public class ValorWorldMap {
             else grid[pos[0]][pos[1]].setType(CellType.PLAIN);
         }
 
-        // place a couple of market tiles on remaining plain spots
+        // Add a couple market tiles
         int marketsToPlace = 2;
         int placed = 0;
         for (int i = pick; i < elig.size() && placed < marketsToPlace; i++) {
@@ -113,11 +134,11 @@ public class ValorWorldMap {
             }
         }
 
-        // set initial party position at bottom middle lane (default spawn)
+        // Default party position (not actually used in Valor mode)
         int spawnCol = lanes[1][0];
         this.partyPosition = new Position(size - 1, spawnCol);
 
-        // Ensure each lane has at least one clear path from top nexus to bottom nexus
+        // Make sure each lane has a clear path (clear obstacles if needed)
         for (int i = 0; i < lanes.length; i++) {
             ensureLanePathExists(i);
         }
@@ -358,9 +379,17 @@ public class ValorWorldMap {
         return null;
     }
 
-    // move monsters one step forward (toward heroes) along their lane if possible
+    /**
+     * Move one random monster forward toward heroes.
+     * Called after each hero move to gradually advance monster pressure.
+     * 
+     * Movement strategy:
+     * 1. Try moving forward (down one row)
+     * 2. If blocked, try moving sideways within lane to go around obstacles
+     * 3. If still blocked, stay put
+     */
     public void stepMonsters() {
-        // collect monster positions first
+        // Find all monsters on the board
         List<Position> monsterPositions = new ArrayList<>();
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
@@ -371,16 +400,15 @@ public class ValorWorldMap {
 
         if (monsterPositions.isEmpty()) return;
 
-        // choose one random monster to move per step (better matches desired pacing)
+        // Pick one random monster to move (prevents overwhelming hero)
         Position chosen = monsterPositions.get(random.nextInt(monsterPositions.size()));
         Cell src = getCellAt(chosen);
         Monster m = src.getMonster();
         if (m == null) return;
 
-        // attempt forward move first (down)
+        // Try moving forward first
         Position forward = chosen.moveDown();
         if (isValidPosition(forward) && canEnter(forward, false) && !isBlockedByOpposingUnit(chosen, forward, false)) {
-            // move forward
             Cell dst = getCellAt(forward);
             src.removeMonster();
             Integer mid = monsterIds.get(m);
@@ -389,19 +417,17 @@ public class ValorWorldMap {
             return;
         }
 
-        // if forward blocked, try lateral move within same lane to bypass obstacles
+        // Forward blocked, try moving sideways to go around obstacles
         int laneIdx = getLaneIndexForPosition(chosen);
-        if (laneIdx == -1) return; // monster not in a lane column? nothing to do
+        if (laneIdx == -1) return;
 
         int[] laneCols = lanes[laneIdx];
         int curCol = chosen.getCol();
         int otherCol = laneCols.length > 1 ? (laneCols[0] == curCol ? laneCols[1] : laneCols[0]) : curCol;
 
-        // try lateral (same row, other column) if different
         if (otherCol != curCol) {
             Position lateral = new Position(chosen.getRow(), otherCol);
             if (isValidPosition(lateral) && canEnter(lateral, false) && !isBlockedByOpposingUnit(chosen, lateral, false)) {
-                // move laterally to try bypassing obstacle next turn
                 Cell dst = getCellAt(lateral);
                 src.removeMonster();
                 Integer mid = monsterIds.get(m);
@@ -411,7 +437,7 @@ public class ValorWorldMap {
             }
         }
 
-        // no valid move found for this monster this step
+        // Couldn't move anywhere, monster stays put
     }
 
     // Blocking rule: cannot move past an opposing unit in the same lane

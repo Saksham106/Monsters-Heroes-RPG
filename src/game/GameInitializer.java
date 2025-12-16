@@ -12,6 +12,11 @@ import items.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Sets up everything needed to start a Legends of Valor game.
+ * Loads data, lets player choose heroes and difficulty, creates the map,
+ * and spawns initial monsters.
+ */
 public class GameInitializer {
     private final GameContext ctx;
 
@@ -26,12 +31,13 @@ public class GameInitializer {
         loadGameData();
         createParty();
 
+        // Create the 3-lane battlefield
         ctx.worldMap = new ValorWorldMap(GameConstants.WORLD_SIZE);
 
-    // create a shared respawn manager for the game
-    ctx.respawnManager = new RespawnManager(ctx);
+        // Set up the respawn system for when heroes die
+        ctx.respawnManager = new RespawnManager(ctx);
 
-        // Choose difficulty
+        // Let player choose how often monsters spawn
         ctx.view.println("\nSelect difficulty:");
         ctx.view.println("1) Easy (spawn every 6 rounds)");
         ctx.view.println("2) Medium (spawn every 4 rounds)");
@@ -46,20 +52,20 @@ public class GameInitializer {
 
         createMarkets();
 
-        // Place heroes at nexus
+        // Place each hero at their nexus spawn (one per lane)
         for (int i = 0; i < ctx.party.size(); i++) {
             Position spawn = ctx.worldMap.getHeroNexusSpawn(i);
             ctx.worldMap.placeHero(spawn, ctx.party.get(i));
         }
 
-        // Apply terrain bonuses for any hero initially placed on special tiles
+        // If heroes spawned on special terrain, give them bonuses right away
         MovementController mc = new MovementController(ctx);
         for (Hero h : ctx.party) {
             Position p = ctx.worldMap.getHeroPosition(h);
             if (p != null) mc.applyTerrainBonus(h, p);
         }
 
-        // spawn initial monsters so they render on board
+        // Spawn initial wave of monsters at enemy nexus
         MonsterSpawner spawner = new MonsterSpawner(ctx);
         spawner.spawnMonsters();
 
@@ -67,14 +73,17 @@ public class GameInitializer {
         ctx.view.println();
     }
 
+    // Load all items, heroes, and monsters from text files
     private void loadGameData() {
         ctx.view.println("Loading game data...");
         String dataPath = "";
 
+        // Load items
         ctx.allWeapons = DataLoader.loadWeapons(dataPath + "Weaponry.txt");
         ctx.allArmor = DataLoader.loadArmor(dataPath + "Armory.txt");
         ctx.allPotions = DataLoader.loadPotions(dataPath + "Potions.txt");
 
+        // Combine all spell types into one list
         List<Spell> fireSpells = DataLoader.loadFireSpells(dataPath + "FireSpells.txt");
         List<Spell> iceSpells = DataLoader.loadIceSpells(dataPath + "IceSpells.txt");
         List<Spell> lightningSpells = DataLoader.loadLightningSpells(dataPath + "LightningSpells.txt");
@@ -83,6 +92,7 @@ public class GameInitializer {
         ctx.allSpells.addAll(iceSpells);
         ctx.allSpells.addAll(lightningSpells);
 
+        // Load monster templates for spawning
         ctx.allDragons = DataLoader.loadDragons(dataPath + "Dragons.txt");
         ctx.allExoskeletons = DataLoader.loadExoskeletons(dataPath + "Exoskeletons.txt");
         ctx.allSpirits = DataLoader.loadSpirits(dataPath + "Spirits.txt");
@@ -93,6 +103,7 @@ public class GameInitializer {
                 ctx.allDragons.size(), ctx.allExoskeletons.size(), ctx.allSpirits.size()));
     }
 
+    // Let the player pick exactly 3 heroes for their party
     private void createParty() {
         ctx.view.println("\n=== HERO SELECTION ===");
         ctx.view.println("Choose exactly 3 heroes for your party.");
@@ -100,6 +111,7 @@ public class GameInitializer {
         int partySize = 3;
         ctx.party = new ArrayList<>();
 
+        // Load all available heroes
         List<Warrior> warriors = DataLoader.loadWarriors("Warriors.txt");
         List<Sorcerer> sorcerers = DataLoader.loadSorcerers("Sorcerers.txt");
         List<Paladin> paladins = DataLoader.loadPaladins("Paladins.txt");
@@ -114,6 +126,7 @@ public class GameInitializer {
             System.exit(1);
         }
 
+        // Let player pick 3 heroes one at a time
         for (int i = 0; i < partySize; i++) {
             ctx.view.println(String.format("\nSelect hero %d:", i + 1));
             for (int j = 0; j < allHeroes.size(); j++) {
@@ -126,7 +139,7 @@ public class GameInitializer {
             int choice = ctx.view.readInt("Your choice: ", 1, allHeroes.size());
             Hero selectedHero = allHeroes.get(choice - 1);
             ctx.party.add(selectedHero);
-            allHeroes.remove(choice - 1);
+            allHeroes.remove(choice - 1); // Remove so they can't be picked again
             ctx.view.println(String.format("\n✓ Added %s to your party!", selectedHero.getName()));
         }
 

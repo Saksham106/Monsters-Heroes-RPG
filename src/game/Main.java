@@ -1,11 +1,12 @@
 package game;
 
-// Main class - starts up the game
-// Just creates the game controller and runs it
+/**
+ * Entry point for both game modes.
+ * Lets player choose between Classic (Monsters & Heroes) or Legends of Valor.
+ */
 public class Main {
     
     public static void main(String[] args) {
-        // Launch the game mode chooser which will construct the chosen controller
         GameModeChooser chooser = new GameModeChooser();
         chooser.start();
     }

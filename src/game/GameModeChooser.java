@@ -22,10 +22,10 @@ public class GameModeChooser {
             int choice = view.readInt("Select option: ", 0, 2);
             switch (choice) {
                 case 1:
-                    runClassic();
+                    runClassic(); // Original Monsters & Heroes game
                     break;
                 case 2:
-                    runValor();
+                    runValor(); // New lane-based game
                     break;
                 case 0:
                 default:

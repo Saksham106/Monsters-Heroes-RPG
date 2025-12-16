@@ -3,6 +3,10 @@ package game;
 import characters.Hero;
 import java.util.List;
 
+/**
+ * Handles all player input and routes commands to the appropriate controllers.
+ * Acts as the central hub for turning user input into game actions.
+ */
 public class CommandProcessor {
     private final GameContext ctx;
     private final MovementController movementController;
@@ -22,6 +26,7 @@ public class CommandProcessor {
         char command = input.charAt(0);
 
         switch (command) {
+            // Hero selection (1, 2, or 3)
             case '1':
             case '2':
             case '3':
@@ -31,12 +36,16 @@ public class CommandProcessor {
                     ctx.view.println("Selected hero: " + ctx.party.get(ctx.currentHeroIndex).getName());
                 }
                 break;
+            
+            // Movement commands
             case 'W':
             case 'A':
             case 'S':
             case 'D':
                 movementController.handleHeroMovement(command);
                 break;
+            
+            // Special movement abilities
             case 'T':
                 movementController.handleTeleport();
                 break;
@@ -46,6 +55,8 @@ public class CommandProcessor {
             case 'E':
                 movementController.removeAdjacentObstacle();
                 break;
+            
+            // Info and market
             case 'I':
                 displayInfo();
                 break;

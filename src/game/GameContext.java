@@ -12,22 +12,28 @@ import java.util.HashMap;
 import characters.Hero;
 
 /**
- * Shared mutable game state passed between controllers.
- * Kept minimal and package-visible for the refactor.
+ * Shared state for Legends of Valor game.
+ * All controllers access and modify this shared context instead of passing
+ * a bunch of parameters around. Makes it easy to add new state without
+ * changing method signatures.
  */
 public class GameContext {
+    // Core game components
     public ConsoleView view;
     public ValorWorldMap worldMap;
     public List<Hero> party;
     public List<Market> markets;
     public boolean gameRunning;
-    public int currentHeroIndex = 0;
-    public int roundCounter = 0;
-    public int spawnInterval = 4;
-
-    // Respawn manager (created during initialization)
+    
+    // Turn tracking
+    public int currentHeroIndex = 0; // Which hero is currently selected
+    public int roundCounter = 0; // How many rounds have passed
+    public int spawnInterval = 4; // Spawn monsters every N rounds
+    
+    // Respawn system
     public RespawnManager respawnManager;
-
+    
+    // Game data loaded from files (used for spawning/markets)
     public java.util.List<Weapon> allWeapons;
     public java.util.List<Armor> allArmor;
     public java.util.List<Potion> allPotions;
@@ -35,6 +41,8 @@ public class GameContext {
     public java.util.List<Dragon> allDragons;
     public java.util.List<Exoskeleton> allExoskeletons;
     public java.util.List<Spirit> allSpirits;
-    // Track active terrain bonuses per hero as int[]{strBonus, dexBonus, agiBonus}
+    
+    // Track temporary stat bonuses from terrain (Bush/Cave/Koulou)
+    // Format: int[]{strBonus, dexBonus, agiBonus}
     public Map<Hero, int[]> terrainBonuses = new HashMap<>();
 }
