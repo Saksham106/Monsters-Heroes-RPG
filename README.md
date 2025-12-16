@@ -737,6 +737,447 @@ Thank you for playing Monsters and Heroes!
 ### Legends of Valor Mode Example
 
 ```text
-Output:
-(TODO - LEAVE FOR USER TO COMPLETE)
+Choose a game variant:
+1) Monsters & Heroes
+2) Legends of Valor
+0) Exit
+Select option: 2
+Starting Legends of Valor mode...
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║           LEGENDS OF VALOR                                 ║
+║           A Text-Based MOBA                                ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+=== GAME INSTRUCTIONS ===
+
+CONTROLS:
+  W/w - Move Up
+  A/a - Move Left
+  S/s - Move Down
+  D/d - Move Right
+  I/i - Show Information
+  M/m - Enter Market (when on Market tile)
+  Q/q - Quit Game
+
+MAP SYMBOLS:
+  H#   - Your Hero
+  M#   - Monster
+  M   - Market Tile
+  B   - Bush Tile
+  C   - Cave Tile
+  K   - Koulou Tile
+  O   - Obstacle Tile
+  N   - Nexus Tile
+  X   - Inaccessible Tile
+  ' ' - Plain Tile
+
+OBJECTIVE:
+  Battle monsters, level up your heroes, and reach the enemy Nexus before they reach yours!
+  and visit markets to buy better equipment!
+
+Loading game data...
+Data loaded: 6 weapons, 5 armor, 6 potions, 13 spells
+             12 dragons, 12 exoskeletons, 11 spirits
+
+=== HERO SELECTION ===
+Choose exactly 3 heroes for your party.
+
+Select hero 1:
+1. Gaerdal Ironhand the WARRIOR (Lv.1) - HP: 100/100, MP: 100/100, Gold: 1354 - STR:700 DEX:600 AGI:500 MP:100 Gold:1354
+2. Sehanine Monnbow the WARRIOR (Lv.1) - HP: 100/100, MP: 600/600, Gold: 2500 - STR:700 DEX:500 AGI:800 MP:600 Gold:2500
+3. Muamman Duathall the WARRIOR (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2546 - STR:900 DEX:750 AGI:500 MP:300 Gold:2546
+4. Flandal Steelskin the WARRIOR (Lv.1) - HP: 100/100, MP: 200/200, Gold: 2500 - STR:750 DEX:700 AGI:650 MP:200 Gold:2500
+5. Undefeated Yoj the WARRIOR (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:800 DEX:700 AGI:400 MP:400 Gold:2500
+6. Eunoia Cyn the WARRIOR (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:700 DEX:600 AGI:800 MP:400 Gold:2500
+7. Rillifane Rallathil the SORCERER (Lv.1) - HP: 100/100, MP: 1300/1300, Gold: 2500 - STR:750 DEX:500 AGI:450 MP:1300 Gold:2500
+8. Segojan Earthcaller the SORCERER (Lv.1) - HP: 100/100, MP: 900/900, Gold: 2500 - STR:800 DEX:650 AGI:500 MP:900 Gold:2500
+9. Reign Havoc the SORCERER (Lv.1) - HP: 100/100, MP: 800/800, Gold: 2500 - STR:800 DEX:800 AGI:800 MP:800 Gold:2500
+10. Reverie Ashels the SORCERER (Lv.1) - HP: 100/100, MP: 900/900, Gold: 2500 - STR:800 DEX:400 AGI:700 MP:900 Gold:2500
+11. Kalabar the SORCERER (Lv.1) - HP: 100/100, MP: 800/800, Gold: 2500 - STR:850 DEX:600 AGI:400 MP:800 Gold:2500
+12. Skye Soar the SORCERER (Lv.1) - HP: 100/100, MP: 1000/1000, Gold: 2500 - STR:700 DEX:500 AGI:400 MP:1000 Gold:2500
+13. Parzival the PALADIN (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2500 - STR:750 DEX:700 AGI:650 MP:300 Gold:2500
+14. Sehanine Moonbow the PALADIN (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2500 - STR:750 DEX:700 AGI:700 MP:300 Gold:2500
+15. Skoraeus Stonebones the PALADIN (Lv.1) - HP: 100/100, MP: 250/250, Gold: 2500 - STR:650 DEX:350 AGI:600 MP:250 Gold:2500
+16. Garl Glittergold the PALADIN (Lv.1) - HP: 100/100, MP: 100/100, Gold: 2500 - STR:600 DEX:400 AGI:500 MP:100 Gold:2500
+17. Amaryllis Astra the PALADIN (Lv.1) - HP: 100/100, MP: 500/500, Gold: 2500 - STR:500 DEX:500 AGI:500 MP:500 Gold:2500
+18. Caliber Heist the PALADIN (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:400 DEX:400 AGI:400 MP:400 Gold:2500
+Your choice: 1
+
+✓ Added Gaerdal Ironhand to your party!
+
+Select hero 2:
+1. Sehanine Monnbow the WARRIOR (Lv.1) - HP: 100/100, MP: 600/600, Gold: 2500 - STR:700 DEX:500 AGI:800 MP:600 Gold:2500
+2. Muamman Duathall the WARRIOR (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2546 - STR:900 DEX:750 AGI:500 MP:300 Gold:2546
+3. Flandal Steelskin the WARRIOR (Lv.1) - HP: 100/100, MP: 200/200, Gold: 2500 - STR:750 DEX:700 AGI:650 MP:200 Gold:2500
+4. Undefeated Yoj the WARRIOR (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:800 DEX:700 AGI:400 MP:400 Gold:2500
+5. Eunoia Cyn the WARRIOR (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:700 DEX:600 AGI:800 MP:400 Gold:2500
+6. Rillifane Rallathil the SORCERER (Lv.1) - HP: 100/100, MP: 1300/1300, Gold: 2500 - STR:750 DEX:500 AGI:450 MP:1300 Gold:2500
+7. Segojan Earthcaller the SORCERER (Lv.1) - HP: 100/100, MP: 900/900, Gold: 2500 - STR:800 DEX:650 AGI:500 MP:900 Gold:2500
+8. Reign Havoc the SORCERER (Lv.1) - HP: 100/100, MP: 800/800, Gold: 2500 - STR:800 DEX:800 AGI:800 MP:800 Gold:2500
+9. Reverie Ashels the SORCERER (Lv.1) - HP: 100/100, MP: 900/900, Gold: 2500 - STR:800 DEX:400 AGI:700 MP:900 Gold:2500
+10. Kalabar the SORCERER (Lv.1) - HP: 100/100, MP: 800/800, Gold: 2500 - STR:850 DEX:600 AGI:400 MP:800 Gold:2500
+11. Skye Soar the SORCERER (Lv.1) - HP: 100/100, MP: 1000/1000, Gold: 2500 - STR:700 DEX:500 AGI:400 MP:1000 Gold:2500
+12. Parzival the PALADIN (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2500 - STR:750 DEX:700 AGI:650 MP:300 Gold:2500
+13. Sehanine Moonbow the PALADIN (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2500 - STR:750 DEX:700 AGI:700 MP:300 Gold:2500
+14. Skoraeus Stonebones the PALADIN (Lv.1) - HP: 100/100, MP: 250/250, Gold: 2500 - STR:650 DEX:350 AGI:600 MP:250 Gold:2500
+15. Garl Glittergold the PALADIN (Lv.1) - HP: 100/100, MP: 100/100, Gold: 2500 - STR:600 DEX:400 AGI:500 MP:100 Gold:2500
+16. Amaryllis Astra the PALADIN (Lv.1) - HP: 100/100, MP: 500/500, Gold: 2500 - STR:500 DEX:500 AGI:500 MP:500 Gold:2500
+17. Caliber Heist the PALADIN (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:400 DEX:400 AGI:400 MP:400 Gold:2500
+Your choice: 2
+
+✓ Added Muamman Duathall to your party!
+
+Select hero 3:
+1. Sehanine Monnbow the WARRIOR (Lv.1) - HP: 100/100, MP: 600/600, Gold: 2500 - STR:700 DEX:500 AGI:800 MP:600 Gold:2500
+2. Flandal Steelskin the WARRIOR (Lv.1) - HP: 100/100, MP: 200/200, Gold: 2500 - STR:750 DEX:700 AGI:650 MP:200 Gold:2500
+3. Undefeated Yoj the WARRIOR (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:800 DEX:700 AGI:400 MP:400 Gold:2500
+4. Eunoia Cyn the WARRIOR (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:700 DEX:600 AGI:800 MP:400 Gold:2500
+5. Rillifane Rallathil the SORCERER (Lv.1) - HP: 100/100, MP: 1300/1300, Gold: 2500 - STR:750 DEX:500 AGI:450 MP:1300 Gold:2500
+6. Segojan Earthcaller the SORCERER (Lv.1) - HP: 100/100, MP: 900/900, Gold: 2500 - STR:800 DEX:650 AGI:500 MP:900 Gold:2500
+7. Reign Havoc the SORCERER (Lv.1) - HP: 100/100, MP: 800/800, Gold: 2500 - STR:800 DEX:800 AGI:800 MP:800 Gold:2500
+8. Reverie Ashels the SORCERER (Lv.1) - HP: 100/100, MP: 900/900, Gold: 2500 - STR:800 DEX:400 AGI:700 MP:900 Gold:2500
+9. Kalabar the SORCERER (Lv.1) - HP: 100/100, MP: 800/800, Gold: 2500 - STR:850 DEX:600 AGI:400 MP:800 Gold:2500
+10. Skye Soar the SORCERER (Lv.1) - HP: 100/100, MP: 1000/1000, Gold: 2500 - STR:700 DEX:500 AGI:400 MP:1000 Gold:2500
+11. Parzival the PALADIN (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2500 - STR:750 DEX:700 AGI:650 MP:300 Gold:2500
+12. Sehanine Moonbow the PALADIN (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2500 - STR:750 DEX:700 AGI:700 MP:300 Gold:2500
+13. Skoraeus Stonebones the PALADIN (Lv.1) - HP: 100/100, MP: 250/250, Gold: 2500 - STR:650 DEX:350 AGI:600 MP:250 Gold:2500
+14. Garl Glittergold the PALADIN (Lv.1) - HP: 100/100, MP: 100/100, Gold: 2500 - STR:600 DEX:400 AGI:500 MP:100 Gold:2500
+15. Amaryllis Astra the PALADIN (Lv.1) - HP: 100/100, MP: 500/500, Gold: 2500 - STR:500 DEX:500 AGI:500 MP:500 Gold:2500
+16. Caliber Heist the PALADIN (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500 - STR:400 DEX:400 AGI:400 MP:400 Gold:2500
+Your choice: 3
+
+✓ Added Undefeated Yoj to your party!
+
+=== Your Party ===
+Gaerdal Ironhand the WARRIOR (Lv.1) - HP: 100/100, MP: 100/100, Gold: 1354
+Muamman Duathall the WARRIOR (Lv.1) - HP: 100/100, MP: 300/300, Gold: 2546
+Undefeated Yoj the WARRIOR (Lv.1) - HP: 100/100, MP: 400/400, Gold: 2500
+
+Your party is ready to adventure!
+
+Select difficulty:
+1) Easy (spawn every 6 rounds)
+2) Medium (spawn every 4 rounds)
+3) Hard (spawn every 2 rounds)
+Difficulty: 1
+Game initialized successfully!
+
+
+================================
++------+------+------+------+------+------+------+------+
+|  M1  |  N   |  X   |  M2  |  N   |  X   |  M3  |  N   |
++------+------+------+------+------+------+------+------+
+|  B   |  C   |  X   |  O   |  M   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  O   |  X   |  K   |  .   |  X   |  .   |  K   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  C   |  .   |  X   |  O   |  B   |
++------+------+------+------+------+------+------+------+
+|  .   |  M   |  X   |  O   |  .   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  C   |  X   |  .   |  .   |  X   |  .   |  C   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  .   |  .   |  X   |  .   |  O   |
++------+------+------+------+------+------+------+------+
+|  H1  |  N   |  X   |  H2  |  N   |  X   |  H3  |  N   |
++------+------+------+------+------+------+------+------+
+
+Legend: N=Nexus, X=Wall(Inaccessible), O=Obstacle, .=Plain, B=Bush, C=Cave, K=Koulou
+Occupancy: H# = hero (level shown), M# = monster. H#/M# indicates co-occupancy.
+
+1) Gaerdal Ironhand at (7, 0) <-- selected
+2) Muamman Duathall at (7, 3) 
+3) Undefeated Yoj at (7, 6) 
+================================
+Enter command (1-3 to select hero, W/A/S/D to move, T=Teleport, R=Recall, E=RemoveObstacle, I/M/Q): w
+Gaerdal Ironhand moved to (6, 0)
+
+================================
++------+------+------+------+------+------+------+------+
+|  M1  |  N   |  X   |  M2  |  N   |  X   |  N   |  N   |
++------+------+------+------+------+------+------+------+
+|  B   |  C   |  X   |  O   |  M   |  X   |  M3  |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  O   |  X   |  K   |  .   |  X   |  .   |  K   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  C   |  .   |  X   |  O   |  B   |
++------+------+------+------+------+------+------+------+
+|  .   |  M   |  X   |  O   |  .   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  C   |  X   |  .   |  .   |  X   |  .   |  C   |
++------+------+------+------+------+------+------+------+
+|  H1  |  .   |  X   |  .   |  .   |  X   |  .   |  O   |
++------+------+------+------+------+------+------+------+
+|  N   |  N   |  X   |  H2  |  N   |  X   |  H3  |  N   |
++------+------+------+------+------+------+------+------+
+
+Legend: N=Nexus, X=Wall(Inaccessible), O=Obstacle, .=Plain, B=Bush, C=Cave, K=Koulou
+Occupancy: H# = hero (level shown), M# = monster. H#/M# indicates co-occupancy.
+
+1) Gaerdal Ironhand at (6, 0) <-- selected
+2) Muamman Duathall at (7, 3) 
+3) Undefeated Yoj at (7, 6) 
+================================
+Enter command (1-3 to select hero, W/A/S/D to move, T=Teleport, R=Recall, E=RemoveObstacle, I/M/Q): w
+Gaerdal Ironhand moved to (5, 0)
+
+================================
++------+------+------+------+------+------+------+------+
+|  M1  |  N   |  X   |  M2  |  N   |  X   |  N   |  N   |
++------+------+------+------+------+------+------+------+
+|  B   |  C   |  X   |  O   |  M   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  O   |  X   |  K   |  .   |  X   |  M3  |  K   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  C   |  .   |  X   |  O   |  B   |
++------+------+------+------+------+------+------+------+
+|  .   |  M   |  X   |  O   |  .   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  H1  |  C   |  X   |  .   |  .   |  X   |  .   |  C   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  .   |  .   |  X   |  .   |  O   |
++------+------+------+------+------+------+------+------+
+|  N   |  N   |  X   |  H2  |  N   |  X   |  H3  |  N   |
++------+------+------+------+------+------+------+------+
+
+Legend: N=Nexus, X=Wall(Inaccessible), O=Obstacle, .=Plain, B=Bush, C=Cave, K=Koulou
+Occupancy: H# = hero (level shown), M# = monster. H#/M# indicates co-occupancy.
+
+1) Gaerdal Ironhand at (5, 0) <-- selected
+2) Muamman Duathall at (7, 3) 
+3) Undefeated Yoj at (7, 6) 
+================================
+Enter command (1-3 to select hero, W/A/S/D to move, T=Teleport, R=Recall, E=RemoveObstacle, I/M/Q): w
+Gaerdal Ironhand moved to (4, 0)
+
+================================
++------+------+------+------+------+------+------+------+
+|  M1  |  N   |  X   |  N   |  M2  |  X   |  N   |  N   |
++------+------+------+------+------+------+------+------+
+|  B   |  C   |  X   |  O   |  M   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  O   |  X   |  K   |  .   |  X   |  M3  |  K   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  C   |  .   |  X   |  O   |  B   |
++------+------+------+------+------+------+------+------+
+|  H1  |  M   |  X   |  O   |  .   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  C   |  X   |  .   |  .   |  X   |  .   |  C   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  .   |  .   |  X   |  .   |  O   |
++------+------+------+------+------+------+------+------+
+|  N   |  N   |  X   |  H2  |  N   |  X   |  H3  |  N   |
++------+------+------+------+------+------+------+------+
+
+Legend: N=Nexus, X=Wall(Inaccessible), O=Obstacle, .=Plain, B=Bush, C=Cave, K=Koulou
+Occupancy: H# = hero (level shown), M# = monster. H#/M# indicates co-occupancy.
+
+1) Gaerdal Ironhand at (4, 0) <-- selected
+2) Muamman Duathall at (7, 3) 
+3) Undefeated Yoj at (7, 6) 
+================================
+Enter command (1-3 to select hero, W/A/S/D to move, T=Teleport, R=Recall, E=RemoveObstacle, I/M/Q): w
+Gaerdal Ironhand moved to (3, 0)
+
+================================
++------+------+------+------+------+------+------+------+
+|  M1  |  N   |  X   |  N   |  M2  |  X   |  N   |  N   |
++------+------+------+------+------+------+------+------+
+|  B   |  C   |  X   |  O   |  M   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  O   |  X   |  K   |  .   |  X   |  .   |  M3  |
++------+------+------+------+------+------+------+------+
+|  H1  |  .   |  X   |  C   |  .   |  X   |  O   |  B   |
++------+------+------+------+------+------+------+------+
+|  .   |  M   |  X   |  O   |  .   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  C   |  X   |  .   |  .   |  X   |  .   |  C   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  .   |  .   |  X   |  .   |  O   |
++------+------+------+------+------+------+------+------+
+|  N   |  N   |  X   |  H2  |  N   |  X   |  H3  |  N   |
++------+------+------+------+------+------+------+------+
+
+Legend: N=Nexus, X=Wall(Inaccessible), O=Obstacle, .=Plain, B=Bush, C=Cave, K=Koulou
+Occupancy: H# = hero (level shown), M# = monster. H#/M# indicates co-occupancy.
+
+1) Gaerdal Ironhand at (3, 0) <-- selected
+2) Muamman Duathall at (7, 3) 
+3) Undefeated Yoj at (7, 6) 
+================================
+Enter command (1-3 to select hero, W/A/S/D to move, T=Teleport, R=Recall, E=RemoveObstacle, I/M/Q): w
+Gaerdal Ironhand moved to (2, 0)
+
+================================
++------+------+------+------+------+------+------+------+
+|  M1  |  N   |  X   |  N   |  N   |  X   |  N   |  N   |
++------+------+------+------+------+------+------+------+
+|  B   |  C   |  X   |  O   |  M2  |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  H1  |  O   |  X   |  K   |  .   |  X   |  .   |  M3  |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  C   |  .   |  X   |  O   |  B   |
++------+------+------+------+------+------+------+------+
+|  .   |  M   |  X   |  O   |  .   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  C   |  X   |  .   |  .   |  X   |  .   |  C   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  .   |  .   |  X   |  .   |  O   |
++------+------+------+------+------+------+------+------+
+|  N   |  N   |  X   |  H2  |  N   |  X   |  H3  |  N   |
++------+------+------+------+------+------+------+------+
+
+Legend: N=Nexus, X=Wall(Inaccessible), O=Obstacle, .=Plain, B=Bush, C=Cave, K=Koulou
+Occupancy: H# = hero (level shown), M# = monster. H#/M# indicates co-occupancy.
+
+1) Gaerdal Ironhand at (2, 0) <-- selected
+2) Muamman Duathall at (7, 3) 
+3) Undefeated Yoj at (7, 6) 
+================================
+Enter command (1-3 to select hero, W/A/S/D to move, T=Teleport, R=Recall, E=RemoveObstacle, I/M/Q): w
+Gaerdal Ironhand moved to (1, 0)
+Gaerdal Ironhand receives terrain bonus: +STR 0 +DEX 2 +AGI 0
+
+*** A battle has been triggered by proximity to monsters! ***
+
+╔════════════════════════════════════════════════════════════╗
+║                  ⚔️  BATTLE BEGINS! ⚔️                      ║
+╚════════════════════════════════════════════════════════════╝
+
+Your party encounters:
+  • BigBad Wolf [EXOSKELETON] (Lv.1) - HP: 150/150, DMG: 150, DEF: 302, Dodge: 15.0%
+
+Press Enter to continue...
+
+
+════════════════ ROUND 1 ════════════════
+
+
+=== HEROES ===
+  ✓ Gaerdal Ironhand - HP: 100/100, MP: 100/100
+
+=== MONSTERS ===
+  1. BigBad Wolf [EXOSKELETON] (Lv.1) - HP: 150/150, DMG: 150, DEF: 302, Dodge: 15.0%
+
+================================
+>>> Gaerdal Ironhand's Turn <<<
+HP: 100/100 | MP: 100/100
+
+1. Attack
+2. Cast Spell
+3. Use Potion
+4. Equip Item
+5. View Info
+0. Quit Game
+
+Your action: 1
+
+Select target:
+1. BigBad Wolf [EXOSKELETON] (Lv.1) - HP: 150/150, DMG: 150, DEF: 302, Dodge: 15.0%
+0. Cancel
+
+Target: 1
+
+⚔️  Gaerdal Ironhand attacked BigBad Wolf for 40 damage!
+Press Enter to continue...
+
+
+--- MONSTERS' TURN ---
+• BigBad Wolf attacked Gaerdal Ironhand, but they dodged!
+Press Enter to continue...
+
+
+✨ Heroes regenerated HP and MP!
+
+Fastforwarding>>
+.
+.
+.
+
+════════════════ ROUND 4 ════════════════
+
+
+=== HEROES ===
+  ✓ Gaerdal Ironhand - HP: 100/100, MP: 100/100
+
+=== MONSTERS ===
+  1. BigBad Wolf [EXOSKELETON] (Lv.1) - HP: 30/150, DMG: 150, DEF: 302, Dodge: 15.0%
+
+================================
+>>> Gaerdal Ironhand's Turn <<<
+HP: 100/100 | MP: 100/100
+
+1. Attack
+2. Cast Spell
+3. Use Potion
+4. Equip Item
+5. View Info
+0. Quit Game
+
+Your action: 1
+
+Select target:
+1. BigBad Wolf [EXOSKELETON] (Lv.1) - HP: 30/150, DMG: 150, DEF: 302, Dodge: 15.0%
+0. Cancel
+
+Target: 1
+
+⚔️  Gaerdal Ironhand attacked BigBad Wolf for 40 damage! BigBad Wolf has been defeated!
+Press Enter to continue...
+
+
+════════════════════════════════════════════
+║       🎉 VICTORY! 🎉                  ║
+════════════════════════════════════════════
+
+The monsters have been defeated!
+
+Rewards distributed to surviving heroes:
+  Gaerdal Ironhand - Level 1 (XP: 9, Gold: 1454)
+
+Fainted heroes will respawn at their Nexus after 1 round.
+Press Enter to continue...
+
+
+================================
++------+------+------+------+------+------+------+------+
+|  N   |  N   |  X   |  N   |  N   |  X   |  N   |  N   |
++------+------+------+------+------+------+------+------+
+|  H1  |  C   |  X   |  O   |  M   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  O   |  X   |  K   |  M2  |  X   |  .   |  M3  |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  C   |  .   |  X   |  O   |  B   |
++------+------+------+------+------+------+------+------+
+|  .   |  M   |  X   |  O   |  .   |  X   |  .   |  .   |
++------+------+------+------+------+------+------+------+
+|  .   |  C   |  X   |  .   |  .   |  X   |  .   |  C   |
++------+------+------+------+------+------+------+------+
+|  .   |  .   |  X   |  .   |  .   |  X   |  .   |  O   |
++------+------+------+------+------+------+------+------+
+|  N   |  N   |  X   |  H2  |  N   |  X   |  H3  |  N   |
++------+------+------+------+------+------+------+------+
+
+Legend: N=Nexus, X=Wall(Inaccessible), O=Obstacle, .=Plain, B=Bush, C=Cave, K=Koulou
+Occupancy: H# = hero (level shown), M# = monster. H#/M# indicates co-occupancy.
+
+1) Gaerdal Ironhand at (1, 0) <-- selected
+2) Muamman Duathall at (7, 3) 
+3) Undefeated Yoj at (7, 6) 
+================================
+Enter command (1-3 to select hero, W/A/S/D to move, T=Teleport, R=Recall, E=RemoveObstacle, I/M/Q): w
+Gaerdal Ironhand loses terrain bonus: -STR 0 -DEX 2 -AGI 0
+Gaerdal Ironhand moved to (0, 0)
+
+=== HEROES WIN: one or more heroes reached the enemy Nexus! ===
+
+Thank you for playing Legends of Valor!
+================================
+Choose a game variant:
+1) Monsters & Heroes
+2) Legends of Valor
+0) Exit
+Select option: 
 ```
