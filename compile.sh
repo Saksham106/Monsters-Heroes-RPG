@@ -2,7 +2,7 @@
 
 # Compilation script for Monsters and Heroes RPG
 
-echo "Compiling Monsters and Heroes RPG..."
+echo "Compiling MH and LV Games..."
 
 # Create bin directory if it doesn't exist
 mkdir -p bin
@@ -14,7 +14,7 @@ javac -d bin @sources.txt
 if [ $? -eq 0 ]; then
     echo "✓ Compilation successful!"
     echo ""
-    echo "To run the game:"
+    echo "To run the games:"
     echo "  java -cp bin game.Main"
     echo ""
     echo "Or use: ./run.sh"
