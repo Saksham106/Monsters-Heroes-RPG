@@ -1,12 +1,14 @@
-package game.helpers;
+package handlers;
 
 import battle.Battle;
 import characters.Hero;
 import characters.Monster;
 import io.ConsoleView;
 
-// Extracted battle UI helpers to keep GameController smaller
-public class BattleUiHelper {
+/**
+ * Handles battle UI and display
+ */
+public class BattleHandler {
 
     public static void displayBattleStatus(ConsoleView view, Battle battle) {
         view.println("\n=== HEROES ===");

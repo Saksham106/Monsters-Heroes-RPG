@@ -1,4 +1,4 @@
-package game.helpers;
+package handlers;
 
 import io.ConsoleView;
 import market.Market;
@@ -7,7 +7,9 @@ import characters.Hero;
 
 import java.util.List;
 
-// Extracted market interactions to reduce GameController size
+/**
+ * Handles market interactions
+ */
 public class MarketHandler {
     private final ConsoleView view;
 
